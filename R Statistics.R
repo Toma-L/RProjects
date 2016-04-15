@@ -1225,7 +1225,343 @@ scheffeCI(anxi, factor(times), conf.level = .95)
 
 #二因子變異數分析==============================
 
+temp <- read.csv("two_way.csv", header = TRUE, fileEncoding = "BIG-5")
+attach(temp)
+head(temp)
+twoway <- data.frame(temp)
+attach(twoway)
+library(car)
+twoway$sex <- recode(sex, "1 = '男生'; 2 = '女生'")
+twoway$year <- recode(year, "1 = '一年級'; 2 = '二年級'; 3 = '三年級'")
+twoway$sex <- recode(twoway$sex, "1 = '男生'; 2 = '女生'")
+twoway$year <- recode(twoway$year, "1 = '一年級'; 2 = '二年級'; 3 = '三年級'")
+
+head(twoway)
+
+
+##交互作用顯著−性別與年級在學校壓力的交互作用
+
+tapply(spress, sex, mean)
+tapply(spress, year, mean)
+tapply(spress, list(sex, year), mean)
+
+aggregate(twoway[, 3:5], by = list(sex, year), mean)
+aggregate(twoway[, 3:5], by = list(sex, year), sd)
+
+sd.cell <- aggregate(twoway[, 3:5], by = list(sex, year), sd)[, 3:5]
+sd.cell <- round(sd.cell, 2)
+sd.cell
+
+sd.basic <- aggregate(twoway[, 3:5], by = list(sex, year), sd)[, 1:2]
+sd.basic
+
+cbind(sd.basic, sd.cell)
+aggregate(twoway[, 3:5], by = list(twoway$sex, twoway$year), function(x) c(mean(x), sd(x)))
+aggregate(twoway$spress, by = list(twoway$sex, twoway$year), function(x) c(mean(x), sd(x)))
+
+
+###執行二因子變異數分析
+
+two.model <- aov(spress ~ sex * year, data = twoway)
+print(two.model)
+summary(two.model) #二因子變異數分析程序中，當交互作用項達到顯著時，個別的主要效果是否顯著就不是關注的重點
+
+temp.model <- lm(spress ~ sex * year, data = twoway) #二因子變異數分析摘要也可以用lm()
+anova(temp.model)
+
+temp1.model <- lm(spress ~ sex + year + sex:year, data = twoway) #也可以這樣寫
+anova(temp1.model)
+
+
+install.packages("rpsychi") #也可以用rpsychi套件的ind.twoway()、ind.twoway.second()函數
+library(rpsychi)
+ind.twoway(spress ~ sex * year, data = temp) #partial.etasq為效果量（effect size），信賴區間不包含0為顯著
+
+m.mat <- matrix(tapply(spress, list(sex, year), mean), ncol = 3) #求細格平均數矩陣
+m.mat
+sd.mat <- matrix(tapply(spress, list(sex, year), sd), ncol = 3) #求細格標準差矩陣
+sd.mat
+n.mat <- matrix(tapply(spress, list(sex, year), length), ncol = 3) #求細格樣本數矩陣
+n.mat
+
+
+library(rpsychi)
+ind.twoway.second(m = m.mat, sd = sd.mat, n = n.mat) #也可以用ind.twoway.second()求出二因子變異數分析摘要表
+
+
+###進行單純主要效果檢定
+
+####男生群體的差異比較
+
+sex1.model <- aov(spress ~ year, data = twoway[which(twoway$sex == "男生"), ])
+summary(sex1.model)
+TukeyHSD(sex1.model)
+
+
+####女生群體的差異比較
+
+sex2.model <- aov(spress ~ year, data = twoway[which(twoway$sex == "女生"), ])
+summary(sex2.model)
+TukeyHSD(sex2.model)
+
+
+sex.g1 <- subset(twoway, twoway$sex == "男生") #也可以這樣做
+anova(aov(spress ~ year, data = sex.g1))
+TukeyHSD(aov(spress ~ year, data = sex.g1))
+sex.g2 <- subset(twoway,twoway$sex == "女生")
+anova(aov(spress ~ year, data =sex.g2))
+TukeyHSD(aov(spress ~ year, data = sex.g2))
+
+
+####一年級的差異比較
+
+year1.model <- aov(spress ~ sex, data = twoway[which(twoway$year == "一年級"), ])
+summary(year1.model)
+TukeyHSD(year1.model)
+
+
+####二年級的差異比較
+
+year2.model <- aov(spress ~ sex, data = twoway[which(twoway$year == "二年級"), ])
+summary(year2.model)
+TukeyHSD(year2.model)
+
+
+####三年級的差異比較
+
+year3.model <- aov(spress ~ sex, data = twoway[which(twoway$year == "三年級"), ])
+summary(year3.model)
+TukeyHSD(year3.model)
+
+
+year.g1 <- subset(twoway, twoway$year == "一年級")
+anova(aov(spress ~ sex, data = year.g1))
+
+year.g2 <- subset(twoway, twoway$year == "二年級")
+anova(aov(spress ~ sex, data = year.g2))
+
+year.g3 <- subset(twoway, twoway$year == "三年級")
+anova(aov(spress ~ sex, data = year.g3))
+
+
+###繪出交互作用圖
+
+interaction.plot(sex, year, spress, col = 1:3, lwd = 2.0, ylim = c(3, 12))
+grid()
+
+interaction.plot(year, sex, spress, col = 1:3, lwd = 2.0, ylim = c(3, 12))
+grid()
+
+
+##交互作用不顯著−性別與年級在家庭壓力的交互作用
+
+tapply(hpress, sex, mean)
+tapply(hpress, year, mean)
+
+
+###使用aov()函數進行二因子變異數分析
+
+two.model <- aov(hpress ~ sex * year, data = twoway)
+summary(two.model)
+
+temp.model <- lm(hpress ~ sex * year, data = twoway) #使用lm()
+anova(temp.model)
+
+m.mat <- matrix(tapply(hpress, list(sex, year), mean), ncol = 3)
+sd.mat <- matrix(tapply(hpress, list(sex, year), sd), ncol = 3)
+n.mat <- matrix(tapply(hpress, list(sex, year), length), ncol = 3)
+ind.twoway.second(m = m.mat, sd = sd.mat, n = n.mat)
+
+
+##交互作用不顯著−性別與年級在情感壓力的交互作用
+
+tapply(epress, sex, mean)
+tapply(epress, year, mean)
+tapply(epress, list(sex, year), mean)
+
+
+###使用aov()函數進行二因子變異數分析
+
+two.model <- aov(epress ~ sex * year, data = twoway)
+summary(two.model)
+
+
+m.mat <- matrix(tapply(epress, list(sex, year), mean), ncol = 3)
+sd.mat <- matrix(tapply(epress, list(sex, year), sd), ncol = 3)
+n.mat <- matrix(tapply(epress, list(sex, year), length), ncol = 3)
+ind.twoway.second(m = m.mat, sd = sd.mat, n = n.mat)
+
+
+##CRF-3X3設計-交互作用顯著
+
+temp <- read.csv("twoway33.csv", header = TRUE, fileEncoding = "BIG-5")
+head(temp)
+twoway <- data.frame(temp)
+attach(twoway)
+library(car)
+twoway$year <- recode(year, "1 = '一年級'; 2 = '二年級'; 3 = '三年級'")
+twoway$area <- recode(area, "1 = '北區'; 2 = '南區'; 3 = '東區'")
+attach(twoway)
+
+head(twoway)
+round(tapply(dpress, year, mean), 2)
+round(tapply(dpress, area, mean), 2)
+tapply(dpress, list(year, area), mean)
+
+interaction.plot(year, area, dpress, col = 1:3, lwd = 2.0, ylim = c(2, 10))
+grid()
+interaction.plot(area, year, dpress, col = 1:3, lwd = 2.0, ylim = c(2, 10))
+grid()
+
+
+###進行二因子變異數分析
+
+two.model <- aov(dpress ~ year * area, data = twoway)
+summary(two.model)
+
+library(rpsychi)
+ind.twoway(dpress ~ year * area, data = temp)
+
+
+###進行單純主要效果檢定
+
+year1.model <- aov(dpress ~ area, data = twoway[which(twoway$year == "一年級"), ])
+print(summary(year1.model))
+print(TukeyHSD(year1.model))
+
+year2.model <- aov(dpress ~ area, data = twoway[which(twoway$year == "二年級"), ])
+print(summary(year2.model))
+print(TukeyHSD(year2.model))
+
+year3.model <- aov(dpress ~ area, data = twoway[which(twoway$year == "三年級"), ])
+print(summary(year3.model))
+print(TukeyHSD(year3.model))
+
+area1.model <- aov(dpress ~ year, data = twoway[which(twoway$area == "北區"), ])
+print(summary(area1.model))
+print(TukeyHSD(area1.model))
+
+area2.model <- aov(dpress ~ year, data = twoway[which(twoway$area == "南區"), ])
+print(summary(area2.model))
+print(TukeyHSD(area2.model))
+
+area3.model <- aov(dpress ~ year, data = twoway[which(twoway$area == "東區"), ])
+print(summary(area3.model))
+print(TukeyHSD(area3.model))
+
+
 #典型相關==============================
+
+temp <- read.csv("cancor.csv", header = TRUE, fileEncoding = "BIG-5")
+attach(temp)
+head(temp)
+varx <- temp[c(1:4)]
+vary <- temp[c(5:7)]
+names(varx)
+names(vary)
+head(varx)
+head(vary)
+
+
+##cancor()函數與candisc套件
+
+###使用cancor()函數
+
+m.can <- cancor(varx, vary)
+print(m.can)
+
+names(temp)
+mod.can <- cancor(temp[, 1:4], temp[, 5:7])
+summary(mod.can)
+
+
+###使用candisc套件中的函數
+
+install.packages("candisc")
+library(candisc)
+summary(m.can)
+
+m.can <- cancor(varx, vary)
+print(m.can) #cor為典型相關係數，xcor為X組變數的估計值，xcenter為X組變數調整後的估計值
+
+names(temp)
+
+mod.can <- cancor(temp[, 1:4], temp[, 5:7])
+summary(mod.can)
+
+
+library(candisc)
+summary(m.can)
+
+zapsmall(cor(scores(m.can, type = "x"), #zapsmall()求配對典型變量間的相關
+             scores(m.can, type = "y"))) #score()為線性組合分數
+
+
+coef(m.can, type = "both", standardize = FALSE) #原始典型係數或原始加權係數
+coef(m.can, type = "both", standardize = TRUE) #標準化典型係數（典型加權係數），該組變數對所屬典型變量的貢獻程度
+
+redundancy(m.can) #重疊係數（第一組變相被其相對應典型變量解釋的百分比）
+
+canx <- scores(m.can, type = "x") #X組變相的線性組合分數
+canx
+cany <- scores(m.can, type = "y")
+cany
+
+round(cor(varx, canx), 3) #X組4個變數與其典型變量間的典型負荷量（結構相關係數）
+
+(cor(varx, canx)[, 1])^2
+(cor(varx, canx)[, 2])^2
+(cor(varx, canx)[, 3])^2
+
+mean((cor(varx, canx)[, 1])^2) #求出典型變量對X組四個變數的解釋變異量
+mean((cor(varx, canx)[, 2])^2)
+mean((cor(varx, canx)[, 3])^2)
+
+round(cor(varx, cany), 3) #跨典型負荷量為X組變數與另一組相對應典型變量間的相關
+
+round(mean((cor(varx, cany)[, 1])^2), 3) #X組變數可被Y組變數解釋的變異量（重疊係數）
+round(mean((cor(varx, cany)[, 2])^2), 3)
+round(mean((cor(varx, cany)[, 3])^2), 3)
+
+
+round(cor(vary, cany), 3) #Y組3個變數與其典型變量間的典型負荷量
+
+round(mean((cor(vary, cany)[, 1])^2), 3) #Y組3個典型變量可以解釋Y組3個變數的解釋變異量
+round(mean((cor(vary, cany)[, 2])^2), 3)
+round(mean((cor(vary, cany)[, 3])^2), 3)
+
+round(cor(vary, varx), 3) #Y組3個變數與其對應典型變量間的跨典型負荷量
+
+round(mean((cor(vary, canx)[, 1])^2), 3) #Y組變數可被對應典型變量解釋的百分比
+round(mean((cor(vary, canx)[, 2])^2), 3)
+round(mean((cor(vary, canx)[, 3])^2), 3)
+
+library(candisc)
+heplot(m.can, var.cex = 1.5, var.col = "red", var.lwd = 3) #典型相關輔助圖
+grid()
+
+library(rgl)
+heplot3d(m.can, var.lwd = 3, var.col = "red") #3D典型相關圖
+
+
+##使用套件yacca中的函數cca()
+
+install.packages("yacca")
+library(yacca)
+
+can_m <- cca(varx, vary)
+summary(can_m)
+
+
+##使用套件CCA中的函數cc()
+
+install.packages("CCA")
+library(CCA)
+ccm <- cc(varx, vary)
+print(ccm)
+
+plt.cc(ccm) #繪製觀察值或變數在典型變量上的位置
+
 
 #迴歸分析==============================
 
@@ -1466,9 +1802,44 @@ setCor(y = 9, x = c(7, 8), data = temp, std = TRUE) #setCor()適用兩個以上�
 setCor(y = c(7, 9), x = c(3, 4, 5, 8), data = temp, std = TRUE)
 
 
+#單因子共變數分析==============================
 
+#因素分析與信度分析==============================
+
+#項目分析與試題分析==============================
+
+#二元邏輯斯迴歸分析==============================
+
+#效果值與淨相關==============================
 
 
 
 
 #基礎統計分析 R程式在社會科學之應用==============================
+
+#3讀取、整理資料==============================
+
+#4R的資料型態==============================
+
+#5R的基本指令==============================
+
+#6繪圖==============================
+
+#7自訂函數==============================
+
+#8分佈==============================
+
+#9類別變數之間的相關性==============================
+
+#10線性迴歸==============================
+
+install.packages("ggmap")
+install.packages("RColorBrewer")
+install.packages("sp")
+
+library(ggmap)
+library(RColorBrewer)
+library(sp)
+con <- url("http://www.gadm.org/data/rda/TWN_adm2.RData")
+print(load(con))
+close(con)
