@@ -1,3 +1,333 @@
+#Getting and Cleaning Data==================================================
+
+#Using data.table
+
+library(data.table)
+DF <- data.frame(x = rnorm(9), y = rep(c("a", "b", "c"), each = 3), z = rnorm(9))
+head(DF, 3)
+DT <- data.table(x = rnorm(9), y = rep(c("a", "b", "c"), each = 3), z = rnorm(9))
+head(DT, 3)
+tables() #查看現在有哪些data.table
+DT[2, ]
+DT[DT$y == "a", ]
+DT[c(2, 3)] #都是row
+DT[, c(2, 3)] #執行c(2, 3)
+{
+        x = 1
+        y = 2
+}
+k <- {print(10); 5} #10，會執行前面的
+print(k) #5
+DT[, list(mean(x), sum(z))]
+DT[, table(y)]
+DT[, w := z^2] #使用:=指定新的變數存在原本的資料裡
+DT2 <- DT
+DT[, y := 2] #y全變2
+DT
+head(DT, 3)
+head(DT2, 3) #改變DT也會改變到DT2
+DT[, m := {tmp <- (x+z); log2(tmp + 5)}]
+head(DT)
+
+DT[, a := x > 0]
+head(DT)
+
+DT[, b := mean(x + w), by = a] #把資料分成a為TRUE和a為FALSE，各自計算mean(x+w)，當成其b的值
+
+set.seed(123)
+DT <- data.table(x = sample(letters[1:3], 1E5, TRUE))
+DT[, .N, by = x] #用.N計算次數
+
+DT <- data.table(x = rep(c("a", "b", "c"), each = 100), y = rnorm(300))
+setkey(DT, x)
+DT['a']
+
+DT1 <- data.table(x = c('a', 'a', 'b', 'dt1'), y = 1:4)
+DT2 <- data.table(x = c('a', 'b', 'dt2'), z = 5:7)
+setkey(DT1, x)
+setkey(DT2, x)
+merge(DT1, DT2) #只留下都有的
+
+big_df <- data.frame(x = rnorm(1E6), y = rnorm(1E6))
+file <- tempfile()
+write.table(big_df, file = file, row.names = FALSE, col.names = TRUE, sep"\t", quote = FALSE)
+system.time(fread(file)) #fread()類似read.table()
+system.time(read.table(file, header = TRUE, sep = "\t"))
+
+#Subsetting and sorting
+
+set.seed(13435)
+X <- data.frame("var1" = sample(1:5), "var2" = sample(6:10), "var3" = sample(11:15))
+X <- X[sample(1:5), ]
+X$var2[c(1, 3)] <- NA
+X
+
+X[, 1]
+X[, "var1"]
+X[1:2, "var2"]
+X[(X$var1 <= 3 & X$var3 > 11), ]
+X[(X$var1 <= 3 | X$var3 > 15), ]
+X[which(X$var2 > 8), ]
+sort(X$var1)
+sort(X$var1, decreasing = TRUE)
+sort(X$var2, na.last = TRUE)
+X[order(X$var1), ]
+X[order(X$var1, X$var3), ]
+
+library(plyr)
+arrange(X, var1)
+arrange(X, desc(var1))
+
+X$var4 <- rnorm(5)
+X
+
+Y <- cbind(X, rnorm(5))
+Y
+
+#Summarizing data
+
+if(!file.exists("./data")) {dir.create("./data")}
+fileUrl <- "http://data.baltimorecity.gov/api/views/k5ry-ef3g/rows.csv?accessType = DOWNLOAD"
+download.file(fileUrl, destfile = "./data/restaurants.csv")
+restData <- read.csv("./data/restaurants.csv")
+head(restData, n = 3)
+tail(restData, n = 3)
+summary(restData)
+str(restData)
+
+quantile(restData$councilDistrict, na.rm = TRUE)
+table(restData$zipCode, useNA = "ifany") #如果有NA的話
+table(restData$councilDistrict, restData$zipCode)
+
+sum(is.na(restData$councilDistrict))
+any(is.na(restData$councilDistrict))
+all(restData$zipCode > 0)
+
+colSums(is.na(restData))
+all(colSums(is.na(restData)) == 0)
+
+table(restData$zipCode %in% c("21212")) #%in%前面有多少符合後面
+table(restData$zipCode %in% c("21212", "21213"))
+
+restData[restData$zipCode %in% c("21212", "21213"), ]
+
+data(UCBAdmissions)
+DF <- as.data.frame(UCBAdmissions)
+summary(DF)
+
+xt <- xtabs(Freq ~ Gender + Admit, data = DF) #cross tabs
+
+warpbreaks$replicate <- rep(1:9, len = 54)
+xt <- xtabs(breaks ~., data = warpbreaks)
+xt
+
+ftable(xt)
+
+fakeData <- rnorm(1e5)
+object.size(fakeData) #資料大小
+
+#Creating new variables
+
+s1 <- seq(1, 10, by = 2); s1
+s2 <- seq(1, 10, length = 3); s2
+x <- c(1, 3, 8, 25, 100); seq(along = x)
+restData$nearMe <- restData$neighborhood %in% c("Roland Park", "Homeland")
+table(restData$nearMe)
+
+restData$zipWrong <- ifelse(restData$zipCode < 0, TRUE, FALSE)
+table(restData$zipWrong, restData$zipCode < 0)
+
+restData$zipGroups <- cut(restData$zipCode, breaks = quantile(restData$zipCode)) #cut()
+table(restData$zipGroups)
+table(restData$zipGroups, restData$zipCode)
+
+library(Hmisc)
+restData$zipGroups <- cut2(restData$zipCode, g = 4) #easier cutting
+table(restData$zipGroups)
+
+restData$zcf <- factor(restData$zipCode)
+restData$zcf[1:10]
+class(restData$zcf)
+
+yesno <- sample(c("yes", "no"), size = 10, replace = TRUE)
+yesnofac <- factor(yesno, levels = c("yes", "no")) #levels為factor排序
+relevel(yesnofac, ref = "yes")
+
+as.numeric(yesnofac)
+
+library(Hmisc)
+restData$zipGroups <- cut2(restData$zipCode, g = 4)
+table(restData$zipGroups)
+
+library(Hmisc)
+library(plyr)
+restData2 <- mutate(restData, zipGroups = cut2(zipCode, g = 4)) #mutate()創造新變數
+table(restData2$zipGroups)
+
+#Reshaping data
+
+library(reshape2)
+head(mtcars)
+mtcars$carname <- rownames(mtcars)
+carMelt <- melt(mtcars, id = c("carname", "gear", "cyl"), measure.vars = c("mpg", "hp"))
+head(carMelt, n = 3)
+tail(carMelt, n = 3)
+
+cylData <- dcast(carMelt, cyl ~ variable)
+cylData
+
+cylData <- dcast(carMelt, cyl ~ variable, mean) #對variable的值做mean
+cylData
+
+head(InsectSprays)
+tapply(InsectSprays$count, InsectSprays$spray, sum)
+
+spIns <- split(InsectSprays$count, InsectSprays$spray)
+spIns
+sprCount <- lapply(spIns, sum)
+sprCount
+unlist(sprCount)
+
+sapply(spIns, sum)
+
+ddply(InsectSprays, .(spray), summarize, sum = sum(count))
+
+spraySums <- ddply(InsectSprays, .(spray), summarize, sum = ave(count, FUN = sum))
+head(spraySums)
+
+#Merging data
+
+if(!file.exists("./data")) {dir.create("./data")}
+fileUrl1 <- "http://dl.dropboxusercontent.com/u/7710864/data/reviews-apr29.csv"
+fileUrl2 <- "http://dl.dropboxusercontent.com/u/7710864/data/solutions-apr29.csv"
+download.file(fileUrl1, destfile = "./data/reviews.csv")
+download.file(fileUrl2, destfile = "./data/solutions.csv")
+reviews <- read.csv("./data/reviews.csv")
+solutions <- read.csv("./data/solutions.csv")
+head(reviews, 2)
+head(solutions, 2)
+names(reviews)
+names(solutions)
+
+mergedData <- merge(reviews, solutions, by.x = "solution_id", by.y = "id", all = TRUE)
+head(mergedData)
+intersect(names(solutions), names(reviews)) #intersect()找共同都有的變數
+
+mergedData2 <- merge(reviews, solutions, all = TRUE) #不設定會自動merge名字一樣的變數
+head(mergedData2)
+
+df1 <- data.frame(id = sample(1:10), x = rnorm(10))
+df2 <- data.frame(id = sample(1:10), y = rnorm(10))
+arrange(join(df1, df2), id) #用join()合併
+
+df1 <- data.frame(id = sample(1:10), x = rnorm(10))
+df2 <- data.frame(id = sample(1:10), y = rnorm(10))
+df3 <- data.frame(id = sample(1:10), z = rnorm(10))
+dfList <- list(df1, df2, df3)
+join_all(dfList) #很多個data.frame用join_all合併
+
+#Editing text variables
+
+cameraData <- read.csv("./data/cameras.csv")
+names(cameraData)
+
+splitNames <- strsplit(names(cameraData), "\\.")
+splitNames[[5]]
+splitNames[[6]]
+
+mylist <- list(letters = c("A", "b", "c"), numbers = 1:3, matrix(1:25, ncol = 5))
+head(mylist)
+mylist[1]
+mylist$letters
+mylist[[1]]
+
+splitNames[[6]][1]
+firstElement <- function(x) {x[1]}
+sapply(splitNames, firstElement)
+
+names(reviews)
+sub("_", "", names(reviews), ) #用""取代掉"_"，用sub()
+
+testName <- "this_is_a_test"
+sub("_", "", testName) #sub只會作用在第1個
+
+gsub("_", "", testName) #gsub()作用在全部
+
+grep("Alameda", cameraData$intersection) #grep()
+table(grepl("Alameda", cameraData$intersection)) #grepl()變布林值
+
+grep("Alameda", cameraData$intersection, value = TRUE) #直接給值，不要編號
+grep("JeffStreet", cameraData$intersection)
+length(grep("JeffStreet", cameraData$intersection))
+
+library(stringr)
+nchar("Jeffrey Leek") #計算字串長度
+substr("Jeffrey Leek", 1, 7) #只取字串的某部分
+paste("Jeffrey", "Leek")
+paste0("Jeffrey", "Leek") #paste0()不會有空白
+str_trim("Jeff       ") #清除空白
+
+#Regular Expressions
+
+## ^i think：以i think為首的
+## morning$：以morning作結的
+## [Bb][Uu][Ss][Hh]：不論大小寫
+## ^[Ii] am
+## ^[0-9][a-zA-Z]
+## [^?.]$：[]放開頭代表排除
+
+#Regular Expressions II
+
+## 9.11：.代表什麼字都可以
+## flood|fire：|表示「或」
+## flood|earthquake|hurricane|coldfire
+## ^[Gg]ood|[Bb]ad：bad或Bad就未必在句首
+## ^([Gg]ood|[Bb]ad)：good和bad都只要句首
+## [Gg]eorge([Ww]\.)? [Bb]ush：?代表「未必要」這個
+## [Gg]eorge([Ww]\.)? [Bb]ush：加\代表.是純文字
+## (.*)：.代表()裡面可以是任何字，*代表「不限字數」
+## [0-9]+(.*)[0-9]+：+代表「至少要有一個」
+## [Bb]ush( +[^ ]+ +){1,5}：{1,5}代表重複1~5次
+
+## +([a-zA-Z]+) +\1 +
+## ^s(.*)s
+## ^s(.*?)s$
+
+#Working with dates
+
+d1 <- date()
+d1
+class(d1) #character
+
+d2 <- Sys.Date()
+d2
+class(d2) #Date
+
+format(d2, "%a %b %d")
+
+x <- c("1jan1960", "2jan1960", "31mar1960", "30jul1960")
+z <- as.Date(x, "%d%b%Y")
+z
+z[1] - z[2]
+as.numeric(z[1] - z[2])
+
+weekdays(d2)
+months(d2)
+julian(d2)
+
+library(lubridate)
+ymd("20140108")
+mdy("08/04/2013")
+dmy("03-04-2013")
+ymd_hms("2011-08-03 10:15:03")
+ymd_hms("2011-08-03 10:15:03", tz = "Pacific/Auckland")
+?Sys.timezone
+
+x <- dmy(c("1jan2013", "2jan2013", "31mar2013", "30jul2013"))
+wday(x[1])
+wday(x[1], label = TRUE)
+
+
 #利用R語言打通大數據的經脈==========
 
 #資料前置處理==========
