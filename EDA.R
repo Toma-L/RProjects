@@ -650,3 +650,250 @@ library(plotrix)
 pie3D(Claims_Age, labels = c("<25", "25-29", "30-35", ">35"), explode = .05, 
       main = "3D Pie Chart of Age by Claims", labelcex = .8, 
       col = c("white", "lightgrey", "darkgrey", "black"))
+
+
+#Exploratory Data Analysis==================================================
+
+##Exploratory Graphs==================================================
+
+fileUrl <- "https://raw.githubusercontent.com/jtleek/modules/master/04_ExploratoryAnalysis/exploratoryGraphs/data/avgpm25.csv"
+download.file(fileUrl, destfile = "pollution.csv", method = "curl")
+pollution <- read.csv("pollution.csv", colClasses = c("numeric", "character", "factor", "numeric", "numeric"), header = TRUE)
+head(pollution)
+
+summary(pollution$pm25)
+boxplot(pollution$pm25, col = "blue")
+hist(pollution$pm25, col = "green")
+rug(pollution$pm25) #rug()
+
+hist(pollution$pm25, col = "green", breaks = 100)
+rug(pollution$pm25)
+
+boxplot(pollution$pm25, col = "blue")
+abline(h = 12)
+
+hist(pollution$pm25, col = "green")
+abline(v = 12, lwd = 2)
+abline(v = median(pollution$pm25), col = "magenta", lwd = 4)
+
+barplot(table(pollution$region), col = "wheat", 
+        main = "Number of Coutries in Each Region")
+
+boxplot(pm25 ~ region, data = pollution, col = "red")
+
+par(mfrow = c(2, 1), mar = c(4, 4, 2, 1))
+hist(subset(pollution, region == "east")$pm25, col = "green")
+hist(subset(pollution, region == "west")$pm25, col = "green")
+
+
+with(pollution, plot(latitude, pm25))
+abline(h = 12, lwd = 2, lty = 2)
+
+with(pollution, plot(latitude, pm25, col = region))
+abline(h = 12, lwd = 2, lty = 2)
+
+par(mfrow = c(1, 2), mar = c(5, 4, 2, 1))
+with(subset(pollution, region == "west"), plot(latitude, pm25, main = "West"))
+with(subset(pollution, region == "east"), plot(latitude, pm25, main = "East"))
+
+
+##Plotting Systems in R==================================================
+
+library(datasets)
+data(cars)
+with(cars, plot(speed, dist))
+
+library(lattice)
+state <- data.frame(state.x77, region = state.region)
+xyplot(Life.Exp ~ Income | region, data = state, layout = c(4, 1)) #xyplot() #across levels of z
+
+library(ggplot2)
+data(mpg)
+qplot(displ, hwy, data = mpg) #qplot()
+
+
+##The Base Plotting System in R==================================================
+
+library(datasets)
+hist(airquality$Ozone)
+
+with(airquality, plot(Wind, Ozone))
+airquality <- transform(airquality, Month = factor(Month)) #transform()
+boxplot(Ozone ~ Month, airquality, xlab = "Month", ylab = "Ozone(ppb)")
+
+par("lty") #一些default值
+par("col") #par()是全域圖形參數，作用在所有圖形上而且只能用par()設定
+par("pch")
+par("bg")
+par("mar")
+par("mfrow")
+
+with(airquality, plot(Wind, Ozone))
+title(main = "Ozone and Wind in New York City") #lines/points/text/title/mtext/axis
+
+with(airquality, plot(Wind, Ozone, main = "Ozone and Wind in New York City"))
+with(subset(airquality, Month == 5), points(Wind, Ozone, col = "blue"))
+
+with(airquality, plot(Wind, Ozone, main = "Ozone and Wind in New York City", type = "n"))
+with(subset(airquality, Month == 5), points(Wind, Ozone, col = "blue"))
+with(subset(airquality, Month != 5), points(Wind, Ozone, col = "red"))
+legend("topright", pch = 1, col = c("blue", "red"), legend = c("May", "Other Months"))
+
+with(airquality, plot(Wind, Ozone, main = "Ozone and Wind in New York City", pch = 20))
+model <- lm(Ozone ~ Wind, airquality)
+abline(model, lwd = 2)
+
+par(mfrow = c(1, 2))
+with(airquality, {
+        plot(Wind, Ozone, main = "Ozone and Wind")
+        plot(Solar.R, Ozone, main = "Ozone and Solar Radiation")
+})
+
+par(mfrow = c(1, 3), mar = c(4, 4, 2, 1), oma = c(0, 0, 2, 0))
+with(airquality, {
+        plot(Wind, Ozone, main = "Ozone and Wind")
+        plot(Solar.R, Ozone, main = "Ozone and Solar Radiation")
+        plot(Temp, Ozone, main = "Ozone and Temperature")
+        mtext("Ozone and Weahther in New Your City", outer = TRUE) #mtext()
+})
+
+
+##Graphics Devices in R==================================================
+
+
+quartz() #Mac
+windows() #Windows
+x11() #Unix/Linux
+
+library(datasets)
+with(faithful, plot(eruptions, waiting))
+title(main = "Old Faithful Geyser data")
+
+pdf(file = "myplot.pdf") #開一個pdf檔
+with(faithful, plot(eruptions, waiting))
+title(main = "Old Faithful Geyser Data")
+dev.off()
+
+#向量格式：pdf/svg/postscript/win.metafile
+#點陣圖格式：png/jpeg/tiff/bmp
+
+dev.cur() #查看現在的畫圖裝置
+dev.set(<integer>) #設定畫圖裝置
+
+
+with(faithful, plot(eruptions, waiting))
+title(main = "Old Faithful Geyser data")
+dev.copy(png, file = "geyserplot.png") #把圖放到png檔案裡
+dev.off() #千萬要記得dev.off()
+
+
+##The Lattice Plotting System in R==================================================
+
+#xyplot/bwplot/levelplot
+
+library(lattice)
+library(datasets)
+xyplot(Ozone ~ Wind, data = airquality)
+
+library(datasets)
+library(lattice)
+airquality <- transform(airquality, Month = factor(Month))
+xyplot(Ozone ~ Wind | Month, data = airquality, layout = c(5, 1))
+
+p <- xyplot(Ozone ~ Wind, data = airquality)
+print(p)
+
+xyplot(Ozone ~ Wind, data = airquality) #Auto-printing
+
+set.seed(10)
+x <- rnorm(100)
+f <- rep(0:1, each = 50)
+y <- x + f - f * x + rnorm(100, sd = .5)
+f <- factor(f, labels = c("Group 1", "Group 2"))
+xyplot(y ~ x | f, layout = c(2, 1))
+
+xyplot(y ~ x | f, panel = function(x, y, ...) {
+        panel.xyplot(x, y, ...)
+        panel.abline(h = median(y), lty = 2) #一次寫完所有要畫的東西 #panel.ablin()
+})
+
+xyplot(y ~ x | f, panel = function(x, y, ...){
+        panel.xyplot(x, y, ...)
+        panel.lmline(x, y, col = 2) #panel.lmline()
+})
+
+
+##Plotting with ggplot2==================================================
+
+library(ggplot2)
+qplot(displ, hwy, data = mpg) #qplot()
+qplot(displ, hwy, data = mpg, color = drv)
+qplot(displ, hwy, data = mpg, geom = c("point", "smooth"))
+qplot(hwy, data = mpg, fill = drv)
+
+qplot(displ, hwy, data = mpg, facets = . ~ drv) #factes
+qplot(hwy, data = mpg, facets = drv ~ ., binwidth = 2)
+
+load("/Users/thomas/Downloads/maacs.Rda")
+qplot(log(eno), data = maacs)
+qplot(log(eno), data = maacs, fill = mopos)
+qplot(log(eno), data = maacs, geom = "density")
+qplot(log(eno), data = maacs, geom = "density", color = mopos)
+
+qplot(log(pm25), log(eno), data = maacs)
+qplot(log(pm25), log(eno), data = maacs, shape = mopos)
+qplot(log(pm25), log(eno), data = maacs, color = mopos)
+
+qplot(log(pm25), log(eno), data = maacs, color = mopos) + geom_smooth(method = "lm")
+
+qplot(log(pm25), log(eno), data = maacs, facets = . ~ mopos) + geom_smooth(method = "lm")
+
+qplot(logpm25, NocturnalSympt, data = maacs, 
+      facets = . ~ bmicat) + geom_smooth(method = "lm") #資料集有點問題
+
+head(maacs)
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+summary(g)
+
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+print(g)
+p <- g + geom_point()
+print(p)
+g + geom_point()
+
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+g + geom_point()
+
+g + geom_point() + geom_smooth()
+g + geom_point() + geom_smooth(method = "lm")
+g + geom_point() + facet_grid(. ~ bmicat) + geom_smooth(method = "lm")
+g + geom_point(color = "steelblue", size = 4, alpha = 1/2) #alpha調整透明度
+g + geom_point(aes(color = bmicat), size = 4, alpha = 1/2)
+g + geom_point(aes(color = bmicat)) + labs(title = "MAACS Cohort") + labs(x = expression("log " * PM[2.5]), y = "Nocturnal Symptoms")
+
+g + geom_point(aes(color = bmicat), size = 2, alpha = 1/2) + geom_smooth(size = 4, linetype = 3, method = "lm", se = FALSE)
+
+g + geom_point(aes(color = bmicat)) + theme_bw(base_family = "Times")
+
+testdat <- data.frame(x = 1:100, y = rnorm(100))
+testdat[50, 2] <- 100 #設定outlier
+
+plot(testdat$x, testdat$y, type = "l", ylim = c(-3, 3))
+
+g <- ggplot(testdat, aes(x = x, y = y))
+g + geom_line()
+g + geom_line() + ylim(-3, 3) #outlier不見了
+g + geom_line() + coord_cartesian(ylim = c(-3, 3)) #outlier會留下但不會呈現出來
+
+
+cutpoints <- quantile(maacs$logno2_new, seq(0, 1, length = 11), na.rm = TRUE)
+maacs$no2dec <- cut(maacs$logno2_new, cutpoints)
+levels(maacs$no2dec)
+
+g + geom_point(alpha = 1/3) 
+  + facet_wrap(bmicat ~ no2dec, nrow = 2, ncol = 4)
+  + geom_smooth(method = "lm", se = FALSE, col = "steelblue")
+  + theme_bw(base_family = "Avenir", base_size = 10)
+  + labs(x = expression("log " * PM[2.5]))
+  + labs(y = "Nocturnal Symptoms")
+  + labs(title = "MAACS Cohort")
