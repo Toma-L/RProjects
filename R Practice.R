@@ -2110,7 +2110,6 @@ attLogGarch <- ugarchfit(spec = attLogSpec, data = attLog)
 infocriteria(attLogGarch) #GARCH模型目的不是要對訊號（signal）建立更好的模型，而是要更好地捕捉波動度（volatility）的行為
 
 
-
 #22資料分群==================================================
 
 
@@ -3196,7 +3195,7 @@ rect.hclust(fit_hc, k = 3, border = "dark grey")
 rect.hclust(fit_hc, k = 7, which =  c(2, 6), border = "dark grey")
 
 
-#密度分群
+#密度分群（DBSCAN）
 
 library(fpc)
 ds1 <- dbscan(countries[, -1], eps = 1, MinPts = 5)
@@ -3227,7 +3226,7 @@ for(i in 3:5) {
 }
 
 
-#期望值最大分群
+#期望值最大分群（EM）
 
 library(mclust)
 fit_EM <- Mclust(countries[, -1])
@@ -3246,6 +3245,22 @@ plot(countries_Dens, type = "persp", col = grey(.8))
 
 
 #08判別分析==================================================
+
+##費希爾判別
+#選出適當的投影軸，使類別內離差盡可能小，不同類別間離差盡可能大
+
+#線性判別分析LDA：將樣本點投影到一維空間，實際常常更複雜
+#二次判別分析QDA：投影至二維空間，使用許多二次曲面，常用的非線性判別函數
+
+
+##貝氏判別：利用貝氏選出最大後驗機率的類別
+#不怕雜訊和無關變數，但假設各特徵屬性之間是無關的（現實常常並非如此）
+
+
+#距離判別：根據待判斷樣本與已知類別樣本之間的距離遠近做判別
+#對類別域的交換或重疊較多的待分樣本集來說，此方法較為適合
+#常用的有k最近鄰法（k-Nearest Neighbor; kNN）、有權數的k最近鄰（Weighted k-Nearest Neighbor）
+
 
 
 
@@ -3600,6 +3615,184 @@ table(pred3, y)
 
 #13神經網路==================================================
 
+install.packages("nnet")
+library(nnet)
+
+vector1 <- c("a", "b", "a", "c")
+vector2 <- c(1, 2, 1, 3)
+class.ind(vector1) #對模型中的y進行前置處理
+class.ind(vector2)
+
+url <- "http://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv"
+wine <- read.csv(url, header = TRUE, sep = ";")
+
+cha = 0
+for(i in 1:4898) {
+        if(wine[i, 12] > 6) cha[i] = "good"
+        else if(wine[i, 12] > 5) cha[i] = "mid"
+        else cha[i] = "bad"
+}
+wine[, 12] = factor(cha)
+summary(wine$quality)
+
+scale01 <- function(x) { #資料歸一化，NNet常見的前置處理，將所有資料轉化為[0, 1]之間的數，取消個維度數據間數量級的差別
+        ncol = dim(x)[2] - 1
+        nrow = dim(x)[1]
+        new = matrix(0, nrow, ncol)
+        for(i in 1:ncol) {
+                max = max(x[, i])
+                min = min(x[, i])
+                for(j in 1:nrow) {
+                        new[j, i] = (x[j, i] - min) / (max - min)
+                }
+        }
+        new
+}
+
+names(wine)
+set.seed(71)
+samp <- sample(1:4898, 3000)
+wine[samp, 1:11] <- scale01(wine[samp, ])
+r = 1/max(abs(wine[samp, 1:11])) #參數rang的變化範圍
+set.seed(101)
+model1 <- nnet(quality ~., data = wine, subset = samp, #rang為初始隨機權重的範圍
+               size = 4, rang = r, decay = 5e-4, maxit = 200)
+
+x <- subset(wine, select = -quality)
+y <- wine[, 12]
+y <- class.ind(y)
+set.seed(101)
+model2 <- nnet(x, y, decay = 5e-4, maxit = 200, size = 4, rang = r) #decay為權重衰減精度
+
+summary(model1)
+summary(model2)
+
+x <- wine[, 1:11]
+pred <- predict(model1, x, type = "class") #用於預測的變數個數要跟建立模型時一樣！
+set.seed(110)
+pred[sample(1:4898, 8)]
+
+
+xt <- wine[, 1:11]
+pred <- predict(model2, xt) #第二種模型
+dim(pred)
+pred[sample(1:4898, 4), ] #呈現3個輸出結果的值，表示樣本為某種類別的機率
+
+name <- c("bad", "good", "mid")
+prednew <- max.col(pred) #max.col()確定每列中最大值的那行
+prednewn <- name[prednew]
+set.seed(201)
+prednewn[sample(1:4898, 8)]
+
+
+true <- max.col(y)
+table(true, prednewn) #檢查預測精度
+
+
+data(iris)
+
+x <- iris[, -5]
+y <- iris[, 5]
+
+x <- subset(iris, select = -Species)
+y <- class.ind(y)
+
+model1 <- nnet(x, y, rang = 1/max(abs(x)), size = 4, maxit = 500, decay = 5e-4)
+model2 <- nnet(x, y, rang = 1/max(abs(x)), size = 4, maxit = 500, decay = 5e-4)
+
+#每次建模型使用的反覆運算初值都是不同的
+
+model1$convergence #結果為0表示反覆運算會停止「並非」因為達到最大反覆運算次數
+model2$convergence #所以最大反覆運算次數並非造成兩模型不同的主因
+
+model1$value #最後值為模型擬合標準同模型權數衰減值的和，越小表示擬合效果越好
+model2$value
+
+name <- c("setosa", "versicolor", "virginica")
+pred1 <- name[max.col(predict(model1, x))]
+pred2 <- name[max.col(predict(model2, x))]
+table(iris$Species, pred1) #展示模型精度
+table(iris$Species, pred2)
+
+#要得到最佳模型可以多嘗試不同的模型、測試每一節點數目下模型的誤判率
+
+
+wine <- read.table("wine.txt", sep = ";")
+names(wine) <- c("fixed", "volatile", "citric", "residual", "chlorides", 
+                 "free", "total", "density", "PH", "sulphates", "alcohol", "quality")
+set.seed(71)
+wine <- wine[sample(1:4898, 3000), ]
+nrow.wine <- dim(wine)[1]
+scale01 <- function(x) { #歸一化程式
+        ncol = dim(x)[2] - 1
+        nrow = dim(x)[1]
+        new <- matrix(0, nrow, ncol)
+        for(i in 1:ncol) {
+                max = max(x[, i])
+                min = min(x[, i])
+                for(j in 1:nrow) new[j, i] = (x[j, i] - min)/(max - min)
+        }
+        new
+}
+
+cha = 0
+for(i in 1:nrow.wine) {
+        if(wine[i, 12] > 6) cha[i] = "good"
+        else if(wine[i, 12] > 5) cha[i] = "mid"
+        else cha[i] = "bad"
+}
+wine[, 12] <- factor(cha)
+
+set.seed(444)
+samp <- sample(1:nrow.wine, nrow.wine * .7)
+wine[samp, 1:11] <- scale01(wine[samp, ])
+wine[-samp, 1:11] <- scale01(wine[-samp, ])
+r = 1/max(abs(wine[samp, 1:11]))
+n <- length(samp)
+
+#嘗試不同隱藏層節點個數
+
+err1 = 0
+err2 = 0
+for(i in 1:17) {
+        set.seed(111)
+        model <- nnet(quality ~., data = wine, maxit = 400, rang = r, size = i, subset = samp, decay = 5e-4)
+        err1[i] <- sum(predict(model, wine[samp, 1:11], type = "class") != wine[samp, 12]) / n
+        err2[i] <- sum(predict(model, wine[-samp, 1:11], type = "class") != wine[-samp, 12]) / (nrow.wine - n)
+}
+
+par(family = "Songti TC Light")
+plot(1:17, err1, "l", col = 1, lty = 1, ylab = "模型誤判率", xlab = "隱藏層節點個數", 
+     ylim = c(min(min(err1), min(err2)), max(max(err1), max(err2))))
+lines(1:17, err2, col = 1, lty = 3)
+points(1:17, err1, col = 1, pch = "+")
+points(1:17, err2, col = 1, pch = "o")
+legend(1, 0.53, "測試集誤判率", bty = "n", cex = 1.0) #後面有過度擬合的情形
+legend(1, 0.35, "訓練集誤判率", bty = "n", cex = 1.0) #隱藏層節點3個就夠了
+
+#測試不同訓練週期
+
+errl1 <- 0
+errl2 <- 0
+for(i in 1:500) {
+        set.seed(111)
+        model <- nnet(quality ~., data = wine, maxit = i, rang = r, size = 3, subset = samp)
+        errl1[i] <- sum(predict(model, wine[samp, 1:11], type = "class") != wine[samp, 12]) / n
+        errl2[i] <- sum(predict(model, wine[-samp, 1:11], type = "class") != wine[-samp, 12]) / (nrow.wine - n)
+}
+plot(1:length(errl1), errl1, "l", ylab = "模型誤判率", xlab = "訓練週期", col = 1, 
+     ylim = c(min(min(errl1), min(errl2)), max(max(errl1), max(errl2))))
+lines(1:length(errl1), errl2, col = 1, lty = 3)
+legend(250, .47, "測試集誤判率", bty = "n", cex = .8)
+legend(250, .425, "訓練集誤判率", bty = "n", cex = .8) #模型的誤判率會趨於平穩
+
+set.seed(111)
+model <- nnet(quality ~., data = wine, maxit = 300, rang = r, size = 3, subset = samp)
+x <- wine[-samp, 1:11]
+pred <- predict(model, x, type = "class")
+table(wine[-samp, 12], pred)
+
+
 #14模型評估與選擇==================================================
 
 install.packages("rattle", dependencies = TRUE)
@@ -3609,6 +3802,40 @@ rattle()
 
 
 ###資料挖礦與大數據分析==================================================
+
+#關聯規則==================================================
+
+library(arules)
+library(arulesViz)
+
+data("IncomeESL")
+IncomeESL <- IncomeESL[complete.cases(IncomeESL), ] #刪除遺漏值
+dim(IncomeESL)
+
+Income <- as(IncomeESL, "transactions") #換成可以進行關聯分析的transactions物件，每個屬性值轉化為單一item
+sort(itemFrequency(Income), decreasing = TRUE)
+itemFrequencyPlot(Income, support = .2, cex.names = .8)
+
+rules <- apriori(Income, parameter = list(support = .1, confidence = .6)) #支持度門檻.1，信賴度門檻.6
+summary(rules)
+plot(rules, measure = c("confidence", "lift"), shading = "support")
+plot(rules, method = "grouped") #圓圈大小：支持度，顏色深淺：增益
+rulesOwn <- subset(rules, subset = rhs %in% "householder status=own" & lift > 1) #想觀察特定族群
+inspect(head(sort(rulesOwn, by = "support"), n = 5)) #inspect()
+
+
+data("IncomeESL")
+IncomeESL <- IncomeESL[complete.cases(IncomeESL), ]
+IncomeESL[["income"]] <- factor((as.numeric(IncomeESL[["income"]]) > 6) + 1, 
+                                levels = 1:2, labels = c("$40-", "$40+")) #對資料重新編碼
+
+Income <- as(IncomeESL, "transactions")
+
+rules <- apriori(Income, parameter = list(support = .2, confidence = .6))
+rulesIncome <- subset(rules, subset = rhs %in% "income=$40+" & lift > 1)
+
+inspect(sort(rulesIncome, by = "confidence"))
+
 
 #決策樹分析==================================================
 
@@ -4149,6 +4376,33 @@ correct.svm.best
 
 
 #監督式學習 6.3 人工神經網路==================================================
+
+install.packages("neuralnet")
+library(neuralnet)
+
+traininginput <- as.data.frame(runif(100, min = 0, max = 100))
+trainingoutput <- sqrt(traininginput)
+
+trainingdata <- cbind(traininginput, trainingoutput)
+colnames(trainingdata) <- c("Input", "Output")
+
+net.sqrt <- neuralnet(Output ~ Input, trainingdata, algorithm = "backprop", hidden = 10, threshold = .01, learningrate = .01, )
+
+print(net.sqrt)
+plot(net.sqrt)
+
+testdata <- as.data.frame((1:10)^2) #產生測試資料
+net.results <- compute(net.sqrt, testdata) #用compute()來預測模型結果
+
+cleanoutput <- cbind(testdata, sqrt(testdata), as.data.frame(net.results$net.result))
+colnames(cleanoutput) <- c("Input", "Expected Output", "Neural Net Output")
+print(cleanoutput)
+
+
+install.packages("DMwR")
+library(DMwR)
+regr.eval(cleanoutput[, 'Expected Output'],  #求平均絕對誤差MAE、均方根誤差RMSE
+          cleanoutput[, 'Neural Net Output'], stats = c("mae", "rmse"))
 
 
 #監督式學習 6.4 組合方法==================================================
