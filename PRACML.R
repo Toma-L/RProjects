@@ -1,5 +1,26 @@
 #Practical Machine Learning==================================================
 
+#Components of a predictor:
+##question ---> input data ---> features ---> algorithm ---> parameters ---> evaluation
+##make your question CONCRETE
+
+#Relative order of importance:
+##question > data > features > algorithms
+
+#Garbage in, garbage out.
+
+#Features matter!
+#Properties of good features:
+##Lead to data compression
+##Retain relevant information
+##Are created based on expert application knowledge
+
+#Common mistakes:
+##Trying to automate feature selection
+##Not paying attention to data-specific quirks
+##Throwing away information unnecessarily
+
+
 #What is prediction?==================================================
 
 library(kernlab)
@@ -62,6 +83,25 @@ mean(rule1(spam$capitalAve) == spam$type)
 
 sum(rule1(spam$capitalAve) == spam$type)
 sum(rule2(spam$capitalAve) == spam$type)
+
+
+#Types of errors:
+
+#Sensitivity: TP / (TP + FN)
+#Specificity: TN / (FP + TN)
+#Positive Predictive Value: TP / (TP + FP)
+#Negative Predictive Value: TN / (FN + TN)
+#Accuracy: (TP + TN) / (TP + FP + FN + TN)
+
+
+#Common error measures
+
+#Mean squared error (or root mean squared error): Continuous data, sensitive to outliers
+#Median absolute deviation: Continuous data, often more robust
+#Sensitivity (Recall): If you want few missed positives
+#Specificity: If you want few negatives called positives
+#Accuracy: Weights false positives/negatives equally
+#Concordance: ex: kappa
 
 
 #The caret package==================================================
@@ -198,5 +238,149 @@ t1
 qplot(wage, colour = education, data = training, geom = "density")
 
 
-#Preprocessing=====
+#Preprocessing==================================================
+
+library(caret)
+library(kernlab)
+data(spam)
+
+inTrain <- createDataPartition(y = spam$type, p = .75, list = FALSE)
+training <- spam[inTrain, ]
+testing <- spam[-inTrain, ]
+hist(training$capitalAve, main = "", xlab = "ave. capital run length") #間隔太大
+
+mean(training$capitalAve)
+sd(training$capitalAve)
+
+trainCapAve <- training$capitalAve
+trainCapAveS <- (trainCapAve - mean(trainCapAve)) / sd(trainCapAve)
+mean(trainCapAveS)
+sd(trainCapAveS)
+
+testCapAve <- testing$capitalAve
+testCapAveS <- (testCapAve - mean(trainCapAve)) / sd(trainCapAve) #必須用training set得到的參數估計
+mean(testCapAveS)
+sd(testCapAveS)
+
+preObj <- preProcess(training[, -58], method = c("center", "scale")) #preProcess()
+trainCapAveS <- predict(preObj, training[, -58])$capitalAve
+mean(trainCapAveS)
+sd(trainCapAveS)
+
+testCapAveS <- predict(preObj, testing[, -58])$capitalAve
+mean(testCapAveS)
+sd(testCapAveS)
+
+set.seed(32343)
+modelFit <- train(type ~., data = training, preProcess = c("center", "scale"), method = "glm")
+modelFit
+
+preObj <- preProcess(training[, -58], method = c("BoxCox")) #Box-Cox轉換使連續資料符合常態分配
+trainCapAveS <- predict(preObj, training[, -58])$capitalAve
+par(mfrow = c(1, 2))
+hist(trainCapAveS)
+qqnorm(trainCapAveS)
+
+
+set.seed(13343)
+training$capAve <- training$capitalAve
+selectNA <- rbinom(dim(training)[1], size = 1, prob = .05) == 1
+training$capAve[selectNA] <- NA #製造遺漏值
+
+preObj <- preProcess(training[, -58], method = "knnImpute") #kNN法插補遺漏值
+capAve <- predict(preObj, training[, -58])$capAve
+
+capAveTruth <- training$capitalAve
+capAveTruth <- (capAveTruth - mean(capAveTruth)) / sd(capAveTruth)
+
+quantile(capAve - capAveTruth)
+quantile((capAve - capAveTruth)[selectNA])
+quantile((capAve - capAveTruth)[!selectNA])
+
+#千萬不能用test set估計參數
+
+
+#Covariate creation==================================================
+
+library(ISLR)
+library(caret)
+data(Wage)
+
+inTrain <- createDataPartition(y = Wage$wage, p = .7, list = FALSE)
+training <- Wage[inTrain, ]
+testing <- Wage[-inTrain, ]
+
+table(training$jobclass)
+dummies <- dummyVars(wage ~ jobclass, data = training) #dummyVars()創造虛擬變數
+head(predict(dummies, newdata = training))
+
+nsv <- nearZeroVar(training, saveMetrics = TRUE) #nearZeroVar()移除值幾乎都是0的變數
+nsv
+
+library(splines)
+bsBasis <- bs(training$age, df = 3) #bs()basis function創造多項式函數
+bsBasis
+
+lm1 <- lm(wage ~ bsBasis, data = training)
+plot(training$age, training$wage, pch = 19, cex = .5)
+points(training$age, predict(lm1, newdata = training), col = "red", pch = 19, cex = .5)
+
+predict(bsBasis, age = testing$age) #用training set建立的bsBasis直接用在test set上
+
+
+#Preprocessing with Principal Components Analysis (PCA)==================================================
+
+library(caret)
+library(kernlab)
+data(spam)
+
+inTrain <- createDataPartition(y = spam$type, p = .75, list = FALSE)
+training <- spam[inTrain, ]
+testing <- spam[-inTrain, ]
+M <- abs(cor(training[, -58]))
+diag(M) <- 0
+which(M > .8, arr.ind = TRUE) #挑出cor > .8的
+
+names(spam)[c(34, 32)]
+plot(spam[, 34], spam[, 32])
+
+X <- .71 * training$num415 + .71 * training$num857
+Y <- .71 * training$num415 - .71 * training$num857
+plot(X, Y)
+
+
+#SVD法：解釋強、干擾大、壓抑小
+#PCA法：解釋弱、干擾小、壓抑大
+
+smallSpam <- spam[, c(34, 32)]
+prComp <- prcomp(smallSpam)
+plot(prComp$x[, 1], prComp$x[, 2])
+
+prComp$rotation #PC1: .7081 * num415 + .7061 * num857
+
+typeColor <- ((spam$type == "spam") * 1 + 1)
+prComp <- prcomp(log10(spam[, -58] + 1))
+plot(prComp$x[, 1], prComp$x[, 2], col = typeColor, xlab = "PC1", ylab = "PC2")
+
+
+preProc <- preProcess(log10(spam[, -58] + 1), method = "pca", pcaComp = 2) #用preProcess()做PCA
+spamPC <- predict(preProc, log10(spam[, -58] + 1))
+plot(spamPC[, 1], spamPC[, 2], col = typeColor)
+
+preProc <- preProcess(log10(training[, -58] + 1), method = "pca", pcaComp = 2)
+trainPC <- predict(preProc, log10(training[, -58] + 1))
+modelFit <- train(training$type ~., method = "glm", data = trainPC)
+
+testPC <- predict(preProc, log10(testing[, -58] + 1))
+confusionMatrix(testing$type, predict(modelFit, testPC))
+
+modelFit <- train(training$type ~., method = "glm", preProcess = "pca", data = training)
+confusionMatrix(testing$type, predict(modelFit, testing))
+
+#主成份分析可能會使結果更難解釋
+#最好先轉換資料（logs/Box Cox）
+#可以把圖畫出來確認問題在哪
+
+
+#Predicting with regression==================================================
 
