@@ -20,6 +20,21 @@ print.data.frame(dp)
 
 ##向度變數的增列（指標題項的加總或平均）==============================
 
+dp$ta1 <- dp$a1 + dp$a2 + dp$a3
+dp$ta2 <- dp$a4 + dp$a5 + dp$a6
+dp$ta3 <- dp$a7 + dp$a8
+
+attach(dp)
+dp$ta1 <- a1 + a2 + a3
+dp$ta2 <- a4 + a5 + a6
+dp$ta3 <- a7 + a8
+
+attach(dp)
+dp$ta4 <- round((a1 + a2 + a3)/3, 1)
+dp$ta5 <- round((a4 + a5 + a6)/3, 1)
+dp$ta6 <- round((a7 + a8)/2, 1)
+dp$ta7 <- round((ta1 + ta2 + ta3)/8, 1)
+
 
 
 
@@ -2198,6 +2213,91 @@ splithalf.r(totscale, graph = FALSE)
 #8分佈==============================
 
 #9類別變數之間的相關性==============================
+
+##PRE==============================
+
+#Proportional Reduction of Errors (PRE)：比較在不靠其它變數幫忙前所犯的錯誤判斷，
+#跟有其他變數幫忙所犯的誤差。計算公式為：
+
+#PRE = (E1 - E2) / E1
+#E1：忽略自變數時的預測誤差
+#E2：考慮自變數時的預測誤差
+#PRE最大是1，最小是0
+
+
+##名目變數==============================
+
+#變數為「名目尺度」時用lambda，lambda有方向性，計算方式同PRE
+#E1：總數 - 依變數中的眾數
+#E2：每個依變數的類別 - 該類別的眾數
+
+lambdaf <- function(x) {
+        n <- sum(x)
+        x <- matrix(as.numeric(x), dim(x))
+        SumR <- sum(apply(x, 1, max))
+        SumC <- sum(apply(x, 2, max))
+        MaxC <- max(colSums(x))
+        MaxR <- max(rowSums(x))
+        
+        RClambda <- (SumC - max(rowSums(x))) / (n - MaxR)
+        CRlambda <- (SumR - MaxC) / (n - MaxC)
+        Symmetrylambda <- (SumR + SumC - MaxC - MaxR) / ((2 * n) - MaxC - MaxR)
+        
+        Lambdalist <- list(RClambda, CRlambda, Symmetrylambda)
+        names(Lambdalist) <- c("RClambda", "CRlambda", "Symmetrylambda")
+        
+        Lambdalist
+}
+
+vote2000 <- matrix(c(46, 41, 39, 73), ncol = 2, nrow = 2)
+lambdaf(vote2000) #0.059
+
+crime <- matrix(c(122090, 350670, 930860, 231040, 3992090, 4272230), ncol = 3, nrow = 2)
+lambdaf(crime) #0.105
+
+library(car)
+data(Chile)
+vote_sex <- as.matrix(table(Chile$vote, Chile$sex))
+lambdaf(vote_sex) #0.071
+
+#名目尺度的變數，也可以用Kendall's tau-b
+
+
+##順序變數：Goodman-Kruskal gamma==============================
+
+#Goodman-Kruskal gamma：順序變數的相關，介於-1與1之間
+
+#Ns：自變數與依變數有相同順序的觀察值
+#Nd：自變數排序高但依變數排序低的觀察值
+#Ty、Tx：x、y相等時的觀察值
+
+#Ns <- f11(f22 + f23 + f32 + f33) + f12(f23 + f33) + f21(f32 + f33) + f22(f33)
+#Nd <- f13(f22 + f21 + f32 + f31) + f12(f21 + f31) + f23(f32 + f31) + f22(f31)
+#Ty <- f11(f12 + f13) + f12(f13) + f21(f22 + f23) + f22(f23) + f31(f32 + f33) + f32(f33)
+#Tx <- f11(f21 + f31) + f21(f23) + f12(f22 + f32) + f22(f32) + f13(f23 + f33) + f23(f33)
+f11 = 35; f12 = 73; f13 = 30; f21 = 76; f22 = 134; f23 = 54; f31 = 22; f32 = 56; f33 = 30
+ns <- f11 * (f22 + f23 + f32 + f33) + f12 * (f23 + f33) + f21 * (f32 + f33) + f22 * (f33)
+nd <- f13 * (f22 + f21 + f32 + f31) + f12 * (f21 + f31) + f23 * (f32 + f31) + f22 * (f31)
+Gamma <- (ns - nd) / (ns + nd)
+Gamma #Gamma指標：0.06752
+
+tx <- f11 * (f21 + f31) + f21 * (f23) + f12 * (f22 + f32) + f22 * (f32) + f13 * (f23 + f33) + f23 * (f33)
+ty <- f11 * (f12 + f13) + f12 * (f13) + f21 * (f22 + f23) + f22 * (f23) + f31 * (f32 + f33) + f32 * (f33)
+taub <- (ns - nd) / sqrt((ns + nd + tx) * (ns + nd + ty))
+taub #tau-b指標：0.04093
+
+sommers <- (ns - nd) / (ns + nd + ty)
+sommers #sommers指標：0.04149
+
+
+##卡方檢定==============================
+
+marri <- c(141, 77, 91, 72)
+marripid <- matrix(marri, 2)
+marripid
+
+chisq.test(marripid)
+
 
 #10線性迴歸==============================
 
