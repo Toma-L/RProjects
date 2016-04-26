@@ -2292,11 +2292,36 @@ sommers #sommers指標：0.04149
 
 ##卡方檢定==============================
 
+#不關心變數的方向可以用卡方檢定
+
+#卡方檢定是計算隨機變數的分佈與理論上分佈之間的差距
+
+#分為適合度檢定（goodness of fit）及獨立性檢定（test of independence）
+#適合度檢定：關心變數是適合特定的分佈
+#獨立性檢定：關心兩個名目變數之間是否有統計上的相關（H0為兩變數獨立）
+
+#自由度越大，卡方就要越大才會顯著（p小於0.05）
+
+
 marri <- c(141, 77, 91, 72)
 marripid <- matrix(marri, 2)
 marripid
 
 chisq.test(marripid)
+
+
+library(car)
+edu3 <- recode(Prestige$education, "0:10.99 = 1; 11:12.99 = 2; 13:16 = 3")
+newtype <-Prestige$type
+types4 <- ifelse(is.na(newtype), 0, newtype)
+edu_type <- as.matrix(table(edu3, types4))
+chisq.test(edu_type) #Reject H0
+
+
+titanic <- apply(Titanic, c(1, 4), sum)
+chisq.test(titanic) #Reject H0
+
+round(titanic[, 2] / apply(titanic, 1, sum), 2) #頭等艙獲救率最高
 
 
 #10線性迴歸==============================
