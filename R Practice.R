@@ -1853,7 +1853,118 @@ str_replace(string = commands, pattern = "<.+?>(.+?)<.+>", replacement = "\\1")
 
 #17廣義線性模型==================================================
 
+##羅吉斯迴歸（Logistic Regression）==================================================
+
+acs <- read.table("http://jaredlander.com/data/acs_ny.csv", sep = ",", header = TRUE, stringsAsFactors = FALSE)
+acs$Income <- with(acs, FamilyIncome >= 150000)
+require(ggplot2)
+require(useful)
+ggplot(acs, aes(x = FamilyIncome)) + geom_density(fill = "grey", color = "grey") + geom_vline(xintercept = 150000) + scale_x_continuous(label = multiple.dollar, limits = c(0, 1000000))
+
+head(acs)
+
+income1 <- glm(Income ~ HouseCosts + NumWorkers + OwnRent + NumBedrooms + FamilyType, 
+               data = acs, family = binomial(link = "logit"))
+
+summary(income1)
+
+invlogit <- function(x){
+        1/(1 + exp(-x))
+}
+invlogit(income1$coefficients) #解讀羅吉斯迴歸中的係數要先用羅吉反函數對係數作轉換！
+
+
+##泊松迴歸模型==================================================
+
+#適合運用在計數資料上
+
+ggplot(acs, aes(x = NumChildren)) + geom_histogram(binwidth = 1) #家庭小孩數量直方圖
+
+children1 <- glm(NumChildren ~ FamilyIncome + FamilyType + OwnRent, data = acs, 
+                 family = poisson(link = "log"))
+summary(children1)
+
+install.packages("coefplot")
+library(coefplot)
+coefplot(children1)
+
+#泊松迴歸可能存在過度離散（overdispersion）的問題
+
+z <- (acs$NumChildren - children1$fitted.values) / sqrt(children1$fitted.values)
+sum(z ^ 2) / children1$df.residual #計算過度離散率（OD），>= 2表示過度離散，或是< 2但p值為1
+
+pchisq(sum(z ^ 2), children1$df.residual) #過度離散p值
+
+#過度離散問題顯著，用準泊松分佈（quasi poisson）或負二項分佈（negative binomial）重新建模
+
+children2 <- glm(NumChildren ~ FamilyIncome + FamilyType + OwnRent, data = acs, 
+                 family = quasipoisson(link = "log"))
+multiplot(children1, children2)
+
+
+##其他廣義線性模型==================================================
+
+#glm還支援伽瑪(Gamma)、反高斯（inverse gaussian）、準二項（quasibinomial）回歸
+#對他們使用不同的連結函數（link functions）
+#Gamma：inverse、identity、log
+#Poisson：log、identity、sqrt
+#inverse gaussian：1/mu^2、inverse、identity、log
+
+#多項回歸模型：可以用來對幾種類別進行分類，可以執行好幾個羅吉斯回歸得到相同結果，或使用nnet套件的polr()函數或multinom()函數
+
+
+##倖存分析==================================================
+
+require(survival)
+head(bladder) #stop（事件發生或病人離開研究的時間）、event（在該時間是否有發生事件）
+
+bladder[100:105, ]
+
+survObject <- with(bladder[100:105, ], Surv(stop, event)) #Surv()建立反應變數
+survObject
+survObject[, 1:2] #首兩列有事件發生，發生時間為12，最後兩列沒事件發生，但可能在該時間後發生，因此該資料的發生時間被設限了（censored）
+
+
+#倖存分析最常使用的模型為Cox比例風險模型（Proportional Hazard Model）
+
+cox1 <- coxph(Surv(stop, event) ~ rx + number + size + enum, data = bladder)
+summary(cox1)
+
+#倖存曲線顯示「在某個時間點有多少比例的受試者存活」
+
+plot(survfit(cox1), xlab = "Days", ylab= "Survival Rate", conf.int = TRUE)
+
+
+#此處的rx變數是病人接受治療或安慰劑的指標，可傳遞到strata機贓料分成兩群來分析，產生兩條倖存曲線
+
+cox2 <- coxph(Surv(stop, event) ~ strata(rx) + number + size + enum, data = bladder)
+summary(cox2)
+
+plot(survfit(cox2), xlab = "Days", ylab = "Survival Rate", onf.int = TRUE, col = 1:2)
+legend("bottomleft", legend = c(1, 2), lty = 1, col = 1:2, text.col = 1:2, title = "rx")
+
+cox.zph(cox1) #檢測比例風險模型的假設
+cox.zph(cox2)
+
+
+#Andersen-Gill分析和倖存分析相似，但處理的是區間資料，而且可以處理多個事件
+#例如不只可以處理一間急診室是否有人求診，還能計算出急診室求診個數
+#同樣用coxph()，要加一個附加變數到Surv，且必須根據用來識別資料的欄位（id）對資料分群
+
+head(bladder2)
+ag1 <- coxph(Surv(start, stop, event) ~ rx + number + size + enum + cluster(id), data = bladder2)
+
+ag2 <- coxph(Surv(start, stop, event) ~ strata(rx) + number + size + enum + cluster(id), data = bladder2)
+
+plot(survfit(ag1), conf.int = TRUE)
+plot(survfit(ag2), conf.int = TRUE, col = 1:2)
+legend("topright", legend = c(1, 2), lty = 1, col = 1:2, text.col = 1:2, title = "rx")
+
+
 #18模型診斷==================================================
+
+
+
 
 #19正規化和壓縮方法==================================================
 
@@ -1867,28 +1978,35 @@ testFrame <- data.frame(First = sample(1:10, 20, replace = TRUE),
                        Fifth = ordered(rep(c("Edward", "Frank", "Georgia", "Hank", "Isaac"), 4)),
                        Sixth = rep(c("a", "b"), 10), stringsAsFactors = FALSE)
 head(testFrame)
-head(model.matrix(First ~ Second + Fourth + Fifth, testFrame))
+head(model.matrix(First ~ Second + Fourth + Fifth, testFrame)) #model.matrix()
+
+#Fifth是ordered factor，level間有大小關係
+#Fourth的level少了一個
 
 require(useful)
-head(build.x(First ~ Second + Fourth + Fifth, testFrame, contrasts = FALSE))
-head(build.x(First ~ Second + Fourth + Fifth, testFrame, contrasts = c(Fourth = FALSE, Fifth = TRUE))) #只對Fourth使用所有level
+head(build.x(First ~ Second + Fourth + Fifth, testFrame, contrasts = FALSE)) #build.x()
+head(build.x(First ~ Second + Fourth + Fifth, testFrame, 
+             contrasts = c(Fourth = FALSE, Fifth = TRUE))) #只對Fourth使用所有level
 
 acs$Income <- with(acs, FamilyIncome >= 150000)
 head(acs)
-acsX <- build.x(Income ~ NumBedrooms + NumChildren + NumPeople + NumRooms + NumUnits + NumVehicles + NumWorkers + OwnRent + YearBuilt + ElectricBill + FoodStamp + HeatingFuel + Insurance + Language - 1, data = acs, contrasts = FALSE) #建立預測函數矩陣
+acsX <- build.x(Income ~ NumBedrooms + NumChildren + NumPeople + NumRooms + NumUnits + NumVehicles + NumWorkers + OwnRent + YearBuilt + ElectricBill + FoodStamp + HeatingFuel + Insurance + Language - 1, 
+                data = acs, contrasts = FALSE) #建立預測函數矩陣
 class(acsX)
 dim(acsX)
 topleft(acsX, c = 6)
 topright(acsX, c = 6)
-acsY <- build.y(Income ~ NumBedrooms + NumChildren + NumPeople + NumRooms + NumUnits + NumVehicles + NumWorkers + OwnRent + YearBuilt + ElectricBill + FoodStamp + HeatingFuel + Insurance + Language - 1, data = acs) #建立反應變數
+acsY <- build.y(Income ~ NumBedrooms + NumChildren + NumPeople + NumRooms + 
+                        NumUnits + NumVehicles + NumWorkers + OwnRent + YearBuilt + 
+                        ElectricBill + FoodStamp + HeatingFuel + Insurance + Language - 1, data = acs) #建立反應變數
 head(acsY)
 tail(acsY)
 
 
-install.packages("glmnet")
 require(glmnet)
 set.seed(1863561)
-acsCV1 <- cv.glmnet(x = acsX, y = acsY, family = "binomial", nfold = 5)
+acsCV1 <- cv.glmnet(x = acsX, y = acsY, 
+                    family = "binomial", nfold = 5) #cv.glmnet()可以自動交叉驗證的值，預設alpha為1（LASSO）
 
 acsCV1$lambda.min
 acsCV1$lambda.1se
@@ -1900,51 +2018,52 @@ abline(v = log(c(acsCV1$lambda.min, acsCV1$lambda.1se)), lty = 2)
 
 
 set.seed(71623)
-acsCV2 <- cv.glmnet(x = acsX, y = acsY, family = "binomial", nfold = 5, alpha = 0) #建立脊迴歸模型
+acsCV2 <- cv.glmnet(x = acsX, y = acsY, 
+                    family = "binomial", nfold = 5, alpha = 0) #alpha = 0建立脊迴歸模型
 acsCV2$lambda.min
 acsCV2$lambda.1se
-coef(acsCV2, s = "lambda.1se")
+coef(acsCV2, s = "lambda.1se") #每個變數都會被保留，只是會被壓縮接近0
 plot(acsCV2)
 plot(acsCV2$glmnet.fit, xvar = "lambda")
 abline(v = log(c(acsCV2$lambda.min, acsCV2$lambda.1se)), lty = 2)
 
 set.seed(2834673)
-theFolds <- sample(rep(x = 1:5, length.out = nrow(acsX)))
-alphas <- seq(from = .5, to = 1, by = .05)
-
+theFolds <- sample(rep(x = 1:5, length.out = nrow(acsX))) #建立層別，要觀測值每次執行都落在同一層
+alphas <- seq(from = .5, to = 1, by = .05) #尋找最佳的alpha值要加一層交叉驗證，只考慮>0.5的alpha，因為傾向LASSO好過Ridge Reg.
 set.seed(5127151)
-cl <- makeCluster(2)
+cl <- makeCluster(2) #啟動叢集
 
-install.packages("doParallel")
-library(doParallel)
+library(doParallel) #進行平行化運算
 registerDoParallel(cl)
 before <- Sys.time()
-acsDouble <- foreach(i = 1:length(alphas), .errorhandling = "remove",
-                     .inorder = FALSE, .multicombine = TRUE,
-                     .export = c("acsX", "acsY", "alphas", "theFolds"),
-                     .packages = "glmnet") %dopar%
+acsDouble <- foreach(i = 1:length(alphas), 
+                     .errorhandling = "remove", #若發生錯誤，該迭代跳過
+                     .inorder = FALSE, #整合的先後次序不重要
+                     .multicombine = TRUE, #能夠同時接受好幾個引數
+                     .export = c("acsX", "acsY", "alphas", "theFolds"), #將幾個變數通過.export載入foreach environment
+                     .packages = "glmnet") %dopar% #每個worker都載入glmnet，%dopar%讓foreach以平行運算的方式執行
 {
         print(alphas[i])
         cv.glmnet(x = acsX, y = acsY, family = "binomial", nfolds = 5,
                   foldid = theFolds, alpha = alphas[i])
 }
 after <- Sys.time()
-stopCluster(cl)
+stopCluster(cl) #確保完成後將叢集終止
 after - before
-sapply(acsDouble, class)
+sapply(acsDouble, class) #檢測該list是一個有11個cv.glmnet的物件列表
 
 extractGlmnetInfo <- function(object) {
-        lambdaMin <- object$lambda.min
-        lambda1se <- object$lambda.1se
+        lambdaMin <- object$lambda.min 
+        lambda1se <- object$lambda.1se #找出備選中的lambda
         
-        whichMin <- which(object$lambda == lambdaMin)
+        whichMin <- which(object$lambda == lambdaMin) #找出lambda落在路徑何處
         which1se <- which(object$lambda == lambda1se)
         data.frame(lambda.min = lambdaMin, error.min = object$cvm[whichMin],
-                   lambda.1se = lambda1se, error1se = object$cvm[which1se])
+                   lambda.1se = lambda1se, error1se = object$cvm[which1se]) #建立data.frame含有備選中的lambda和相關錯誤訊息
 }
 
-alphaInfo <- Reduce(rbind, lapply(acsDouble, extractGlmnetInfo))
-alphaInfo2 <- plyr::ldply(acsDouble, extractGlmnetInfo)
+alphaInfo <- Reduce(rbind, lapply(acsDouble, extractGlmnetInfo)) #整合到一個data.frame
+alphaInfo2 <- plyr::ldply(acsDouble, extractGlmnetInfo) #也可以用ldply
 identical(alphaInfo, alphaInfo2)
 
 alphaInfo$Alpha <- alphas
@@ -1956,10 +2075,33 @@ alphaMelt <- melt(alphaInfo, id.vars = "Alpha", value.name = "Value", variable.n
 alphaMelt$Type <- str_extract(string = alphaMelt$Measure, pattern = "(min)|(1se)")
 alphaMelt$Measure <- str_replace(string = alphaMelt$Measure, pattern = "//,(min|1se)", replacement = "")
 alphaCast <- dcast(alphaMelt, Alpha + Type ~ Measure, value.var = "Value")
+together <- function (x) {
+        for(i in 1:dim(x)[1]) {
+                if(i %% 2 == 1) {
+                        x[i, 3] = x[i, 4]
+                }
+        }
+        print(x)
+}
+alphaCast <- together(alphaCast)
+alphaCast <- alphaCast[, -4]
+names(alphaCast)[3] <- "error"
+
 ggplot(alphaCast, aes(x = Alpha, y = error)) + geom_line(aes(group = Type)) + facet_wrap(~Type, scales = "free_y", ncol = 1) + geom_point(aes(size = lambda))
 
 
 #20非線性模型==================================================
+
+fileUrl <- "http://jaredlander.com/data/wifi.rdata"
+download.file(fileUrl, destfile = "wifi.rdata")
+load("wifi.rdata")
+head(wifi)
+
+require(ggplot2)
+ggplot(wifi, aes(x = x, y = y, color = Distance)) + geom_point() + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = mean(wifi$Distance))
+
+
+
 
 #21時間序列與自相關性==================================================
 
@@ -3262,6 +3404,119 @@ plot(countries_Dens, type = "persp", col = grey(.8))
 #常用的有k最近鄰法（k-Nearest Neighbor; kNN）、有權數的k最近鄰（Weighted k-Nearest Neighbor）
 
 
+##資料準備
+
+library(kknn)
+data(miete)
+head(miete)
+dim(miete)
+summary(miete)
+
+library(sampling)
+n <- round(2 / 3 * nrow(miete) / 5) #訓練集佔資料總量2/3，計算每一等級中應取出的樣本數
+n
+sub_train <- strata(miete, stratanames = "nmkat", size = rep(n, 5), method = "srswor") #分層抽樣
+head(sub_train)
+
+data_train <- getdata(miete[, c(-1, -3, -12)], sub_train$ID_unit)
+data_test <- getdata(miete[, -1, -3, -12], -sub_train$ID_unit)
+dim(data_train)
+dim(data_test)
+head(data_test)
+
+
+##線性判別分析==================================================
+
+install.packages("MASS")
+library(MASS)
+fit_lda1 <- lda(nmkat ~., data_train) #執行線性判別
+names(fit_lda1) #輸出項目名稱
+
+fit_lda1$prior #先驗機率
+fit_lda1$counts #各種類別的樣本數
+
+fit_lda1$means #各變數在每一種類中的平均值
+
+fit_lda1
+
+
+fit_lda2 <- lda(data_train[, -12], data_train[, 12])
+fit_lda2
+
+plot(fit_lda1)
+
+plot(fit_lda1, dimen = 1) #輸出1個判別式的圖形
+plot(fit_lda1, dimen = 2)
+
+
+pre_lda1 <- predict(fit_lda1, data_test) #預測
+pre_lda1$class #各樣本的預測結果
+pre_lda1$posterior #每一種類別的後驗機率
+
+table(data_test$nmkat, pre_lda1$class) #混淆矩陣
+
+error_lda1 <- sum(as.numeric(as.numeric(pre_lda1$class) != as.numeric(data_test$nmkat)))/nrow(data_test)
+error_lda1
+
+
+##單純貝氏分類==================================================
+
+install.packages("klaR")
+library(klaR)
+fit_Bayes1 <- NaiveBayes(nmkat ~., data_train)
+names(fit_Bayes1)
+fit_Bayes1$apriori
+fit_Bayes1$tables #用於建立判別規則的所有變數在各種類別下的條件機率
+fit_Bayes1$levels
+fit_Bayes1$call
+fit_Bayes1$usekernel
+fit_Bayes$varnames
+
+plot(fit_Bayes1, vars = "wfl", n = 50, col = c(1, "darkgrey", 1, "darkgrey", 1))
+plot(fit_Bayes1, vars = "mvdauer", n = 50, col = c(1, "darkgrey", 1, "darkgrey", 1))
+plot(fit_Bayes1, vars = "nmqm", n = 50, col = c(1, "darkgrey", 1, "darkgrey", 1))
+
+fit_Bayes1 <- NaiveBayes(data_train[, -12], data_train[, 12])
+pre_Bayes1 <- predict(fit_Bayes1, data_test)
+pre_Bayes1
+
+table(data_test$nmkat, pre_Bayes1$class)
+error_Bayes1 <- sum(as.numeric(as.numeric(pre_Bayes1$class) != as.numeric(data_test$nmkat)))/nrow(data_test)
+error_Bayes1
+
+
+##K最近鄰==================================================
+
+install.packages("class")
+library(class)
+fit_pre_knn <- knn(data_tain[, -12], data_test[, -12], cl = data_train[, 12])
+fit_pre_knn
+table(data_test$nmkat, fit_pre_knn)
+error_knn <- sum(as.numeric(as.numeric(fit_pre_knn) != as.numeric(data_test$nmkat)))/nrow(data_test)
+error_knn
+
+error_knn <- rep(0, 20)
+for(i in 1:20){
+        fit_pre_knn <- knn(data_train[, -12], data_test[, -12], cl = data_train[, 12], k = i)
+        error_knn[i] <- sum(as.numeric(as.numeric(fit_pre_knn) != as.numeric(data_test$nmkat)))/nrow(data_test)
+}
+error_knn
+
+plot(error_knn, type = "l", xlab = "K")
+
+
+##有權數的K最近鄰演算法==================================================
+
+install.packages("kknn")
+library(kknn)
+fit_pre_kknn <- kknn(nmkat ~., data_train, data_test[, -12], k = 5)
+summary(fit_pre_kknn)
+fit <- fitted(fit_pre_kknn)
+fit
+
+table(data_test$nmkat, fit)
+error_kknn <- sum(as.numeric(as.numeric(fit) != as.numeric(data_test$nmkat))) / nrow(data_test)
+error_kknn
 
 
 #09決策樹==================================================
