@@ -384,3 +384,206 @@ confusionMatrix(testing$type, predict(modelFit, testing))
 
 #Predicting with regression==================================================
 
+library(caret)
+data(faithful)
+set.seed(333)
+
+inTrain <- createDataPartition(y = faithful$waiting, p = .5, list = FALSE)
+trainFaith <- faithful[inTrain, ]
+testFaith <- faithful[-inTrain, ]
+head(trainFaith)
+
+plot(trainFaith$waiting, trainFaith$eruptions, pch = 19, col = "blue", xlab = "Waiting", ylab = "Duration")
+
+lm1 <- lm(eruptions ~ waiting, data = trainFaith)
+summary(lm1)
+
+plot(trainFaith$waiting, trainFaith$eruptions, pch = 19, col = "blue", xlab = "Waiting", ylab = "Duration")
+lines(trainFaith$waiting, lm1$fitted, lwd = 3)
+
+coef(lm1)[1] + coef(lm1)[2] *80
+newdata <- data.frame(waiting = 80)
+predict(lm1, newdata)
+
+par(mfrow = c(1, 2))
+plot(trainFaith$waiting, trainFaith$eruptions, pch = 19, col = "blue", xlab = "Waiting", ylab = "Duration")
+lines(trainFaith$waiting, predict(lm1), lwd = 3)
+plot(testFaith$waiting, testFaith$eruptions, pch = 19, col = "blue", xlab = "Waiting", ylab = "Duration")
+lines(testFaith$waiting, predict(lm1, newdata = testFaith), lwd = 3)
+
+sqrt(sum((lm1$fitted - trainFaith$eruptions)^2)) #RMSE
+sqrt(sum((predict(lm1, newdata = testFaith) - testFaith$eruptions)^2))
+
+pred1 <- predict(lm1, newdata = testFaith, interval = "prediction")
+ord <- order(testFaith$waiting)
+plot(testFaith$waiting, testFaith$eruptions, pch = 19, col = "blue")
+matlines(testFaith$waiting[ord], pred1[ord, ], type = "l", col = c(1, 2, 2), lty = c(1, 1, 1), lwd = 3) #Prediction intervals預測區間
+
+modFit <- train(eruptions ~ waiting, data = trainFaith, method = "lm")
+summary(modFit$finalModel)
+
+
+#Predicting with regression, mutiple covariates==================================================
+
+library(ISLR)
+library(ggplot2)
+library(caret)
+
+summary(Wage)
+
+inTrain <- createDataPartition(y = Wage$wage, p = .7, list = FALSE)
+training <- Wage[inTrain, ]
+testing <- Wage[-inTrain, ]
+dim(training); dim(testing)
+
+featurePlot(x = training[, c("age", "education", "jobclass")], 
+            y = training$wage,
+            plot = "pairs")
+
+qplot(age, wage, data = training)
+qplot(age, wage, colour = jobclass, data = training)
+qplot(age, wage, colour = education, data = training)
+
+modFit <- train(wage ~ age + jobclass + education, method = "lm", data = training)
+finMod <- modFit$finalModel
+print(modFit)
+
+plot(finMod, 1, pch = 19, cex = .5, col = "#00000010")
+
+qplot(finMod$fitted, finMod$residuals, colour = race, data = training)
+
+plot(finMod$residuals, pch = 19)
+
+pred <- predict(modFit, testing)
+qplot(wage, pred, colour = year, data = testing)
+
+modFitAll <-train(wage ~., data = training, method = "lm")
+pred <- predict(modFitAll, testing)
+qplot(wage, pred, data = testing)
+
+
+#Predicting with trees==================================================
+
+data(iris)
+library(ggplot2)
+names(iris)
+table(iris$Species)
+
+inTrain <- createDataPartition(y = iris$Species, p = .7, list = FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+dim(training); dim(testing)
+
+qplot(Petal.Width, Sepal.Width, colour = Species, data = training)
+
+library(caret)
+modFit <- train(Species ~., method = "rpart", data = training)
+print(modFit$finalModel)
+
+plot(modFit$finalModel, uniform = TRUE, main = "Classification Tree")
+text(modFit$finalModel, use.n = TRUE, all = TRUE, cex = .8)
+
+library(rattle)
+fancyRpartPlot(modFit$finalModel) #fancyRpartPlot()
+
+predict(modFit, newdata = testing)
+
+#other options: party, rpart
+
+
+#Bagging==================================================
+
+library(ElemStatLearn)
+data(ozone, package = "ElemStatLearn")
+ozone <- ozone[order(ozone$ozone), ]
+head(ozone)
+
+l1 <- matrix(NA, nrow = 10, ncol = 155)
+for(i in 1:10) {
+        ss <- sample(1:dim(ozone)[1], replace = TRUE)
+        ozone0 <- ozone[ss, ]
+        ozone0 <- ozone0[order(ozone0$ozone), ]
+        loess0 <- loess(temperature ~ ozone, data = ozone0, span = .2)
+        l1[i, ] <- predict(loess0, newdata = data.frame(ozone = 1:155))
+}
+
+plot(ozone$ozone, ozone$temperature, pch = 19, cex = .5)
+for(i in 1:10) {
+        lines(1:155, l1[i, ], col = "grey", lwd = 2)
+}
+lines(1:155, apply(l1, 2, mean), col = "red", lwd = 2)
+
+#other options: bagEarth, treebag, bagFDA
+
+predictors <- data.frame(ozone = ozone$ozone)
+temperature <- ozone$temperature
+treebag <- bag(predictors, temperature, B = 10, bagControl = bagControl(fit = ctreeBag$fit,
+                                                                        predict = ctreeBag$pred,
+                                                                        aggregate = ctreeBag$aggregate))
+
+plot(ozone$ozone, temperature, col = "lightgrey", pch = 19)
+points(ozone$ozone, predict(treebag$fits[[1]]$fit, predictors), pch = 19, col = "red")
+points(ozone$ozone, predict(treebag, predictors), pch = 19, col = "blue")
+
+ctreeBag$fit
+ctreeBag$pred
+ctreeBag$aggregate
+
+
+#Random forests==================================================
+
+data(iris)
+library(ggplot2)
+inTrain <- createDataPartition(y = iris$Species, p = .7, list = FALSE)
+
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+
+library(caret)
+modFit <- train(Species ~., data = training, method = "rf", prox = TRUE)
+modFit
+
+getTree(modFit$finalModel, k = 2)
+
+irisP <- classCenter(training[, c(3, 4)], training$Species, modFit$finalModel$prox) #各類別的中心
+irisP <- as.data.frame(irisP)
+irisP$Species <- rownames(irisP)
+p <- qplot(Petal.Width, Petal.Length, col = Species, data = training)
+p + geom_point(aes(x = Petal.Width, y = Petal.Length, col = Species), size = 5, shape = 4, data = irisP)
+
+pred <- predict(modFit, testing)
+testing$predRight <- pred == testing$Species
+table(pred, testing$Species)
+
+qplot(Petal.Width, Petal.Length, colour = predRight, data = testing, main = "newdata Predictions")
+
+?rfcv #避免overfitting, 做random forest可用cross validation
+
+
+#Boosting==================================================
+
+#四種boosting
+##gbm: boosting with trees
+##mboost: model based boosting
+##ada: statistical boosting based on additive logistic regression
+##gamBoost: for boosting generalized additive models
+
+library(ISLR)
+data(Wage)
+library(ggplot2)
+library(caret)
+
+Wage <- subset(Wage, select = -c(logwage))
+inTrain <- createDataPartition(y = Wage$wage, p = .7, list = FALSE)
+training <- Wage[inTrain, ]
+testing <- Wage[-inTrain, ]
+modFit <- train(wage ~ ., method = "gbm", data = training, verbose = FALSE)
+print(modFit)
+
+qplot(predict(modFit, testing), wage, data = testing)
+
+
+#Model based prediction==================================================
+
+#假設資料follow某機率模型，用貝氏機率去指認出來
+
