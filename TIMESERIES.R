@@ -1,4 +1,4 @@
-#資料挖礦與大數據分析==========
+#資料挖礦與大數據分析============================================================
 
 install.packages("forecast")
 library(forecast)
@@ -10,7 +10,7 @@ acf(co2)
 pacf(co2)
 
 train <- ts(co2[seq(1, length(co2)-12)], frequency = 12, start = c(1959, 1))
-test <- ts(co2[seq(length(co2)-11, length(co2))], frequency = 12, start = c(1997, 1))
+test <- ts(co2[seq(length(co2)-11, length(co2))], frequency = 12, start = c(1997, 1)) #留著和預測做比對
 
 tsdisplay(diff(train), main = "First difference of co2") #季節性時間位差的相關性仍十分明顯
 acf(diff(train), main = "First difference of co2")
@@ -57,9 +57,9 @@ MSE <- round(sum((pred2 - test)^2) / 12, 2)
 MAPE <- round(sum(abs(pred2 - test) / pred2) / 12 * 100, 2)
 
 
-#R軟體資料分析基礎與應用==========
+#R軟體資料分析基礎與應用============================================================
 
-##自迴歸移動平均模型（Autoregressive Moving Average）
+##自迴歸移動平均模型（Autoregressive Moving Average）============================================================
 
 require(WDI)
 gdp <- WDI(country = c("US", "CA", "GB", "DE", "CN", "JP", "SG", "IL"), indicator = c("NY.GDP.PCAP.CD", "NY.GDP.MKTP.CD"), start = 1960, end = 2011)
@@ -103,7 +103,8 @@ theForecast <- forecast(object = usBest, h = 5)
 plot(theForecast) #陰影為信賴區間
 
 
-##VAR向量自我迴歸
+##VAR向量自我迴歸============================================================
+
 require(reshape2)
 gdpCast <- dcast(Year ~ Country, data = gdp[, c("Country", "Year", "PerCapGDP")], value.var = "PerCapGDP")
 head(gdpCast)
@@ -138,7 +139,7 @@ coefplot(gdpVar$varresult$Japan)
 predict(gdpVar, n.ahead = 5)
 
 
-##GARCH
+##GARCH============================================================
 
 install.packages("quantmod")
 require(quantmod)
@@ -204,3 +205,33 @@ attLogSpec <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(
                          distribution.model = "std")
 attLogGarch <- ugarchfit(spec = attLogSpec, data = attLog)
 infocriteria(attLogGarch) #GARCH模型目的不是要對訊號（signal）建立更好的模型，而是要更好地捕捉波動度（volatility）的行為
+
+
+#Practical Machine Learning==================================================
+
+#Forecasting==================================================
+
+library(quantmod)
+from.dat <- as.Date("01/01/08", format = "%m/%d/%y")
+to.dat <- as.Date("12/31/13", format = "%m/%d/%y")
+getSymbols("GOOG", src = "google", from = from.dat, to = to.dat)
+
+head(GOOG)
+
+mGoog <- to.monthly(GOOG) #ERROR，待查
+googOpen <- Op(mGoog)
+ts1 <- ts(googOpen, frequency = 12)
+plt(ts1, xlab = "Years+1", ylab = "GOOG")
+
+ts1Train <- window(ts1, start = 1, end = 5)
+ts1Test <- window(ts1, start = 5, end = (7 - 0.01))
+ts1Train
+
+plot(ts1Train)
+lines(ma(ts1Train, order = 3), col = "red")
+
+ets1 <- ets(ts1Train, model = "MMM")
+fcast <- forecast(ets1)
+plot(fcast)
+lines(ts1Test, col = "red")
+accuracy(fcast, ts1Test)
