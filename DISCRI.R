@@ -75,6 +75,8 @@ error_lda1
 
 ##單純貝氏分類==================================================
 
+#假設特徵彼此獨立
+
 install.packages("klaR")
 library(klaR)
 fit_Bayes1 <- NaiveBayes(nmkat ~., data_train)
@@ -131,3 +133,29 @@ fit
 table(data_test$nmkat, fit)
 error_kknn <- sum(as.numeric(as.numeric(fit) != as.numeric(data_test$nmkat))) / nrow(data_test)
 error_kknn
+
+
+#Practical Machine Learning==================================================
+
+#Model based prediction==================================================
+
+#假設資料follow某機率模型，用貝氏機率去指認出來
+
+data(iris)
+library(ggplot2)
+names(iris)
+table(iris$Species)
+
+inTrain <- createDataPartition(y = iris$Species, p = .7, list = FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+dim(training); dim(testing)
+
+modlda <- train(Species ~., data = training, method = "lda") #LDA
+modnb <- train(Species ~., data = training, method = "nb") #Naive Bayes
+plda <- predict(modlda, testing)
+pnb <- predict(modnb, testing)
+table(plda, pnb)
+
+equalPredictions <- (plda == pnb)
+qplot(Petal.Width, Sepal.Width, colour = equalPredictions, data = testing)
