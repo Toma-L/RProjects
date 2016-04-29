@@ -283,3 +283,34 @@ y <- substr(iris_treeModel$output, x[[1]][2]-4, x[[1]][2]-1) #用substr()取得%
 test.error <- as.numeric(y) #用as.numeric()轉換成數字
 test.correct <- 100 - test.error #扣掉錯誤率得到正確率
 test.correct
+
+
+#Practical Machine Learning==================================================
+
+#Predicting with trees==================================================
+
+data(iris)
+library(ggplot2)
+names(iris)
+table(iris$Species)
+
+inTrain <- createDataPartition(y = iris$Species, p = .7, list = FALSE)
+training <- iris[inTrain, ]
+testing <- iris[-inTrain, ]
+dim(training); dim(testing)
+
+qplot(Petal.Width, Sepal.Width, colour = Species, data = training)
+
+library(caret)
+modFit <- train(Species ~., method = "rpart", data = training)
+print(modFit$finalModel)
+
+plot(modFit$finalModel, uniform = TRUE, main = "Classification Tree")
+text(modFit$finalModel, use.n = TRUE, all = TRUE, cex = .8)
+
+library(rattle)
+fancyRpartPlot(modFit$finalModel) #fancyRpartPlot()
+
+predict(modFit, newdata = testing)
+
+#other options: party, rpart
