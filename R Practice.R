@@ -1963,7 +1963,169 @@ legend("topright", legend = c(1, 2), lty = 1, col = 1:2, text.col = 1:2, title =
 
 #18模型診斷==================================================
 
+##殘差==================================================
 
+housing <- read.table("housing.csv", sep = ",", header = TRUE, stringsAsFactors = FALSE)
+names(housing) <- c("Neighborhood", "Class", "Units", "YearBuilt", "SqFt", "Income", "IncomePerSqFt", "Expense", "ExpensePerSqFt", "NetIncome", "Value", "ValuePerSqFt", "Boro")
+head(housing)
+
+house1 <- lm(ValuePerSqFt ~ Units + SqFt + Boro, data = housing)
+summary(house1)
+
+require(coefplot)
+coefplot(house1) #迴歸係數圖
+
+require(ggplot2)
+head(fortify(house1))
+
+h1 <- ggplot(aes(x = .fitted, y = .resid), data = house1) + geom_point() + geom_hline(yintercept = 0) + 
+        geom_smooth(se = FALSE) + labs(x = "Fitted Values", y = "Residuals")
+h1
+
+plot(house1, which = 1)
+plot(house1, which = 1, col = as.numeric(factor(house1$model$Boro)))
+legend("topright", legend = levels(factor(house1$model$Boro)), pch = 1, col = as.numeric(factor(levels(factor(house1$model$Boro)))),
+       text.col = as.numeric(factor(levels(factor(house1$model$Boro)))), title = "Boro")
+
+plot(house1, which = 2) #Q-Q圖
+
+ggplot(house1, aes(sample = .stdresid)) + stat_qq() + geom_abline() #ggplot畫Q-Q圖
+
+ggplot(house1, aes(x = .resid)) + geom_histogram()
+
+
+##模型比較==================================================
+
+house2 <- lm(ValuePerSqFt ~ Units * SqFt + Boro, data = housing)
+house3 <- lm(ValuePerSqFt ~ Units + SqFt * Boro + Class, data = housing)
+house4 <- lm(ValuePerSqFt ~ Units + SqFt * Boro + SqFt * Class, data = housing)
+house5 <- lm(ValuePerSqFt ~ Boro + Class, data = housing)
+
+multiplot(house1, house2, house3, house4, house5, pointSize = 2)
+
+anova(house1, house2, house3, house4, house5) #anova()可以用來比較不同模型
+anova(house1, house2, house3, house4, house5)$RSS #RSS（殘差平方和）越低越好
+
+#變數增加，RSS本來就會降低，要小心
+
+#也可比較AIC、BIC，越低越好
+
+AIC(house1, house2, house3, house4, house5)
+BIC(house1, house2, house3, house4, house5)
+
+
+housing$HighValue <- housing$ValuePerSqFt >= 150
+high1 <- glm(HighValue ~ Units + SqFt + Boro, data = housing, family = binomial(link = "logit")) #二元羅吉斯迴歸模型
+high2 <- glm(HighValue ~ Units * SqFt + Boro, data = housing, family = binomial(link = "logit"))
+high3 <- glm(HighValue ~ Units + SqFt * Boro + Class, data = housing, family = binomial(link = "logit"))
+high4 <- glm(HighValue ~ Units + SqFt * Boro + SqFt * Class, data = housing, family = binomial(link = "logit"))
+high5 <- glm(HighValue ~ Boro + Class, data = housing, family = binomial(link = "logit"))
+
+anova(high1, high2, high3, high4, high5)
+AIC(high1, high2, high3, high4, high5)
+BIC(high1, high2, high3, high4, high5)
+
+
+##交叉驗證（Cross Validation）
+
+require(boot)
+houseG1 <- glm(ValuePerSqFt ~ Units + SqFt + Boro, data = housing, family = gaussian(link = "identity"))
+identical(coef(house1), coef(houseG1))
+
+houseCV1 <- cv.glm(housing, houseG1, K = 5) #5折CV
+houseCV1$delta #檢視誤差（原始CV誤差、調整後CV誤差），調整是基於沒有使用LOOCV的補償
+
+houseG2 <- glm(ValuePerSqFt ~ Units * SqFt + Boro, data = housing)
+houseG3 <- glm(ValuePerSqFt ~ Units + SqFt * Boro + Class, data = housing)
+houseG4 <- glm(ValuePerSqFt ~ Units + SqFt * Boro + SqFt * Class, data = housing)
+houseG5 <- glm(ValuePerSqFt ~ Boro + Class, data = housing)
+
+houseCV2 <- cv.glm(housing, houseG2, K = 5)
+houseCV3 <- cv.glm(housing, houseG3, K = 5)
+houseCV4 <- cv.glm(housing, houseG4, K = 5)
+houseCV5 <- cv.glm(housing, houseG4, K = 5)
+
+cvResults <- as.data.frame(rbind(houseCV1$delta, houseCV2$delta, houseCV3$delta, houseCV4$delta, houseCV5$delta))
+names(cvResults) <- c("Error", "Adjusted.Error")
+cvResults$Model <- sprintf("houseG%s", 1:5)
+cvResults
+
+cvANOVA <- anova(houseG1, houseG2, houseG3, houseG4, houseG5)
+cvResults$ANOVA <- cvANOVA$'Resid. Dev'
+cvResults$AIC <- AIC(houseG1, houseG2, houseG3, houseG4, houseG5)$AIC
+
+require(reshape2)
+cvMelt <- melt(cvResults, id.vars = "Model", variable.name = "Measure", value.name = "Value")
+cvMelt
+ggplot(cvMelt, aes(x = Model, y = Value)) + geom_line(aes(group = Measure, color = Measure)) + 
+        facet_wrap( ~ Measure, scales = "free_y") + theme(axis.text.x = element_text(angle = 90, vjust = .5)) + 
+        guides(color = FALSE)
+
+cv.work <- function(fun, k = 5, data, cost = function(y, yhat) mean((y - yhat) ^ 2),
+                    response = "y", ...) {
+        folds <- data.frame(Fold = sample(rep(x = 1:k, length.out = nrow(data))),
+                            Row = nrow(data))
+        error <- 0
+        for(f in 1:max(folds$Fold))
+        {
+                theRows <- folds$Row[folds$Fold == f]
+                mod <- fun(data = data[-theRows, ], ...)
+                pred <- predict(mod, data[theRows, ])
+                error <- error + cost(data[theRows, response], pred) *
+                        (length(theRows)/nrow(data))
+        }
+        return(error)
+}
+
+cv1 <- cv.work(fun = lm, k = 5, data = housing, response = "ValuePerSqFt", formula = ValuePerSqFt ~ Units + SqFt + Boro)
+cv2 <- cv.work(fun = lm, k = 5, data = housing, response = "ValuePerSqFt", formula = ValuePerSqFt ~ Units * SqFt + Boro)
+cv3 <- cv.work(fun = lm, k = 5, data = housing, response = "ValuePerSqFt", formula = ValuePerSqFt ~ Units + SqFt * Boro + Class)
+cv4 <- cv.work(fun = lm, k = 5, data = housing, response = "ValuePerSqFt", formula = ValuePerSqFt ~ Units + SqFt * Boro + SqFt * Class)
+cv5 <- cv.work(fun = lm, k = 5, data = housing, response = "ValuePerSqFt", formula = ValuePerSqFt ~ Boro + Class)
+cvResults <- data.frame(Model = sprintf("house%s", 1:5), Erro = c(cv1, cv2, cv3, cv4, cv5))
+cvResults
+
+
+##自助抽樣法（Boostrap）
+
+require(plry)
+baseball <- baseball[baseball$year >= 1990, ]
+head(baseball)
+
+bat.avg <- function(data, indices = 1:NROW(data), hits = "h", at.bats = "ab") {
+        sum(data[indices, hits], na.rm = TRUE) / 
+                sum(data[indices, at.bats], na.rm = TRUE)
+}
+
+bat.avg(baseball)
+
+avgBoot <- boot(data = baseball, statistic = bat.avg, R = 1200, stype = "i") #boostrap呼叫1200次
+avgBoot #原資料的測量、估計值的偏差和標準誤差
+
+names(avgBoot)
+
+boot.ci(avgBoot, conf = .95, type = "norm") #信賴區間
+
+ggplot() + geom_histogram(aes(x = avgBoot$t), fill = "grey", color = "grey") + geom_vline(xintercept = avgBoot$t0 + c(-1, 1) * 2 * sqrt(var(avgBoot$t)), linetype = 2)
+
+#boot套件還可以對時間序列和被設限的資料做boostrap
+#只有罕見的情況不能用，像是要測量有偏估計量的不確定性，像是lasso取得的估計量
+
+
+##逐步向前變數選取（Stepwise Variable Selection）
+
+#step函數可以用來對所有可能模型進行迭代
+##scope參數：用來指定可以接受的最小和最大模型
+##direction參數：要在模型增添變數（forward）或移除變數（backward），還是雙向迭代（both）
+
+nullModel <- lm(ValuePerSqFt ~ 1, data = housing) #最小模型基本上就是直線平均
+fullModel <- lm(ValuePerSqFt ~ Units + SqFt * Boro + Boro * Class, data = housing) #最大模型
+
+houseStep <- step(nullModel, scope = list(lower = nullModel, upper = fullModel, data = housing))
+
+houseStep #顯示被挑選的模型
+
+#LASSO迴歸是更好的變數選取方式
 
 
 #19正規化和壓縮方法==================================================
@@ -2838,6 +3000,10 @@ system.time({
 
 ###利用R語言打通大數據的經脈==================================================
 
+#02資料概覽==================================================
+
+#03用R取得資料==================================================
+
 #04探索性資料分析==================================================
 
 ###資料集
@@ -3237,6 +3403,96 @@ predict(fit1, newx = x[1:10, ], s = c(.01, .005)) #lambda為0.01和0.005情況�
 
 #數值精簡指用較小的資料表示形式取代原資料。如參數方法中使用模型估算資料，就可以只儲存模型參數代替實際資料，如回歸模型和對數線性模型
 #非參數方法可以使用長條圖、分群、抽樣和資料立方體聚集等方法
+
+
+#06連結分析==================================================
+
+install.packages("arules")
+library(arules)
+
+#Apriori效率較低
+#Eclat執行效率有所提升
+#FP-Growth高效最佳化演算法
+
+#Apriori參數預設值
+##support = .1
+##confidence = .8
+##maxlen = 10
+##minlen = 1
+##target = "rules"/"frequent itemsets"（輸出連結規則/頻繁項集）
+
+##appearance：對先決條件X（lhs）和連結結果Y（rhs）實際包含哪些項進行限制
+##control：控制函數效能，對項集進行升冪（sort = 1）或降冪（sort = -1）排序，是否向使用者報告處理程序（verbose = TREU/FALSE）
+
+
+library(arules)
+data("Groceries")
+summary(Groceries)
+inspect(Groceries[1:10])  #inspect()
+
+rules0 <- apriori(Groceries, parameter = list(support = .001, confidence = .5))
+rules0 #5668筆規則
+inspect(rules0[1:10])
+
+#先設定得很低，再加強support或confidence來調整，設定值較高容易遺失有用資訊
+
+rules1 <- apriori(Groceries, parameter = list(support = .005, confidence = .5))
+rules1 #120筆
+
+rules2 <- apriori(Groceries, parameter = list(support = .005, confidence = .60))
+rules2 #22筆
+
+rules3 <- apriori(Groceries, parameter = list(support = .005, confidence = .64))
+rules3 #4筆
+inspect(rules3)
+
+
+rules.sorted_sup <- sort(rules0, by = "support") #透過support控制
+inspect(rules.sorted_sup[1:5])
+
+rules.sorted_con <- sort(rules0, by = "confidence") #透過confidence控制
+inspect(rules.sorted_con[1:5])
+
+rules.sorted_lift <- sort(rules0, by = "lift") #透過lift控制
+inspect(rules.sorted_lift[1:5])
+
+#用lift來篩選連結規則是最可靠的指標，結論也常常是最有用的
+
+
+#只想知道芥末（mustard）的強連結商品，且只要2個商品連結
+rules4 <- apriori(Groceries, parameter = list(maxlen = 2, supp = 0.001, conf = .1),
+                  appearance = list(rhs = "mustard", default = "lhs"))
+inspect(rules4)
+
+itemsets_apr <- apriori(Groceries, parameter = list(supp = .001, target = "frequent itemsets"), 
+                        control = list(sort = -1))
+itemsets_apr
+inspect(itemsets_apr[1:5]) #觀察銷量最高的商品（supp = 0.001, sort = -1）
+
+
+#用eclat()來取得最適合進行bundle銷售的商品（eclat()無法產生關聯規則）
+itemsets_ecl <- eclat(Groceries, parameter = list(minlen = 1, maxlen = 3, supp = .001, target = "frequent itemsets"),
+                      control = list(sort = -1))
+itemsets_ecl
+inspect(itemsets_ecl[1:5]) #觀察前5個頻繁項目集（eclat(target = "frequent itemsets)）
+#頻繁項集只和support設定有關，confidence值不影響
+
+
+library(arulesViz)
+rules5 <- apriori(Groceries, parameter = list(support = .002, confidence = .5))
+plot(rules5) #顏色深淺為lift值高低
+
+plot(rules5, measure = c("support", "lift"), shading = "confidence") #改成由confidence決定顏色
+
+plot(rules5, interactive = TRUE) #設定互動參數interactive
+
+plot(rules5, shading = "order", control = list(main = "Two key plot")) #shading = "order"點的顏色深淺代表連結規則中有多少樣商品
+
+plot(rules5, method = "grouped") #lift是顏色深淺，support是尺寸大小
+
+plot(rules5[1:50], method = "matrix", measure = "lift")
+plot(rules5[1:50], method = "matrix3D", measure = "lift")
+plot(rules5[1:50], method ="paracoord")
 
 
 #07分群分析==================================================
