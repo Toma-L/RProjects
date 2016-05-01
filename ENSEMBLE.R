@@ -329,3 +329,16 @@ combPredV <- predict(combModFit, predVDF)
 sqrt(sum((pred1V - validation$wage) ^ 2))
 sqrt(sum((pred2V - validation$wage) ^ 2))
 sqrt(sum((combPredV - validation$wage) ^ 2))
+
+
+#R軟體資料分析基礎與應用==================================================
+
+##隨機森林（Random Forest）==================================================
+
+require(useful)
+require(randomForest)
+creditFormula <- Credit ~ CreditHistory + Purpose + Employment + Duration + Age + CreditAmount
+creditX <- build.x(creditFormula, data = credit)
+creditY <- build.y(creditFormula, data = credit)
+creditForest <- randomForest(x = creditX, y = creditY)
+creditForest
