@@ -52,7 +52,7 @@ level_name <- data.frame(level_name)
 rownames(level_name) <- colnames(Pima[1:7])
 colnames(level_name) <- paste("L", 1:3, sep = "")
 level_name
-
+ 
 Pima.tr <- Pima[1:200, ]
 Pima.te <- Pima[201:nrow(Pima), ]
 set.seed(1111)
@@ -188,6 +188,10 @@ plot(C45_1) #可能要先裝partykit套件
 
 #實用R語言於資料分析==========
 
+##CART==========
+
+###資料準備
+
 library(rpart) #CART
 data(iris)
 np <- ceiling(.1 * nrow(iris)) #抽10%當作測試資料
@@ -196,12 +200,21 @@ test.index <- sample(1:nrow(iris), np)
 iris.testdata <- iris[test.index, ]
 iris.traindata <- iris[-test.index, ]
 
+
+###建立決策樹
+
 iris.tree <- rpart(Species ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width, method = "class", data = iris.traindata)
 iris.tree
 summary(iris.tree)
 
+
+###繪製決策樹
+
 plot(iris.tree)
 text(iris.tree)
+
+
+###模型評估
 
 species.traindata <- iris$Species[-test.index]
 train.predict <- factor(predict(iris.tree, iris.traindata, type = 'class'), levels = levels(species.traindata))
@@ -215,8 +228,10 @@ test.predict <- factor(predict(iris.tree, iris.testdata, type = 'class'), levels
 table.testdata <- table(species.testdata, test.predict)
 table.testdata
 correct.testdata <- sum(diag(table.testdata)) / sum(table.testdata) * 100
-correct.testdata
+correct.testdata #測試資料正確率
 
+
+###模型改善：修剪決策樹
 
 library(rpart)
 data(iris)
@@ -285,32 +300,14 @@ test.correct <- 100 - test.error #扣掉錯誤率得到正確率
 test.correct
 
 
-#Practical Machine Learning==================================================
+#R軟體資料分析基礎與應用==================================================
 
-#Predicting with trees==================================================
+##決策樹==================================================
 
-data(iris)
-library(ggplot2)
-names(iris)
-table(iris$Species)
+require(rpart)
+creditTree <- rpart(Credit ~ CreditAmount + Age + CreditHistory + Employment, data = credit)
+creditTree
+require(rpart.plot)
+rpart.plot(creditTree, extra = 4)
 
-inTrain <- createDataPartition(y = iris$Species, p = .7, list = FALSE)
-training <- iris[inTrain, ]
-testing <- iris[-inTrain, ]
-dim(training); dim(testing)
-
-qplot(Petal.Width, Sepal.Width, colour = Species, data = training)
-
-library(caret)
-modFit <- train(Species ~., method = "rpart", data = training)
-print(modFit$finalModel)
-
-plot(modFit$finalModel, uniform = TRUE, main = "Classification Tree")
-text(modFit$finalModel, use.n = TRUE, all = TRUE, cex = .8)
-
-library(rattle)
-fancyRpartPlot(modFit$finalModel) #fancyRpartPlot()
-
-predict(modFit, newdata = testing)
-
-#other options: party, rpart
+#容易因為overfitting而導致很高的變異，模型會很不穩定，資料略有改變就會對模型造成很大影響
