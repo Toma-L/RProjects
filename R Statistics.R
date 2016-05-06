@@ -2336,7 +2336,6 @@ library(ppcor)
 pcor.test(temp$mscore, temp$pscore, temp$IQ, method = "pearson") #排除IQ
 #p值0.002 < 0.05，一階淨相關係數顯著不等於0
 
-
 #spcor.test()求一階半淨相關（部分相關）係數之顯著性檢定與估計值
 spcor.test(temp$msocre, temp$pscore, temp$IQ, method = "pearson") #從pscore排除IQ後，pscore與mscore的半淨相關係數
 
@@ -2345,6 +2344,29 @@ spcor.test(temp$msocre, temp$pscore, temp$IQ, method = "pearson") #從pscore排�
 
 pcor.test(temp$mscore, temp$pscore, temp[, c(3, 6)], method = "pearson")
 spcor.test(temp$mscore, temp$pscore, temp[, c(3, 6)], method = "pearson")
+
+
+pcor.test(temp$escore, temp$cscore, temp$resource, method = "pearson") #FTR
+
+lowerCor(temp[3:5])
+corr.test(temp[4], temp[5], use = "pairwise", method = "pearson") #求變數間的相關係數估計值與顯著性
+
+corr.test(temp[4:5], temp[3], use = "pairwise", method = "pearson")
+
+m.cor <- cor(temp[3:5])
+cor2pcor(m.cor) #淨相關矩陣
+
+#公式求淨相關係數
+r12 <- cor(temp[4:5])
+r12 <- r12[1, 2]
+r13 <- cor(temp[c(3, 4)])
+r13 <- r13[1, 2]
+r23 <- cor(temp[c(3, 4)])
+r23 <- r23[1, 2]
+r12.3 <- (r12 - r13 * r23) / ((sqrt(1 - r13 ^ 2)) * (sqrt(1 - r23 ^ 2)))
+
+m.partial <- cor2pcor(m.cor)
+pcor2cor(m.partial) #由淨相關矩陣求相關矩陣
 
 
 #基礎統計分析 R程式在社會科學之應用==============================
