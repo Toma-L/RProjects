@@ -1,6 +1,6 @@
 #R軟體統計應用分析實務==============================
 
-#反向題編碼與題項加總==============================
+#04反向題編碼與題項加總==============================
 
 ##資料檔反向題的編碼==============================
 
@@ -40,7 +40,7 @@ dp$ta7 <- round((ta1 + ta2 + ta3)/8, 1)
 
 ##資料檔的整合==============================
 
-#資料的處理與轉換==============================
+#05資料的處理與轉換==============================
 
 ##匯入與儲存資料檔==============================
 
@@ -201,7 +201,7 @@ dabr <- c("daa", "analysis")
 substr(dabr, 1, 3) #substr()抽取子字串
 
 
-#次數分配==============================
+#06次數分配==============================
 
 dsc <- read.csv("dsc_reco.csv", header = T, fileEncoding = "BIG-5") #csv內含中文時，fileEncoding = "BIG-5"！！！
 head(dsc)
@@ -301,7 +301,7 @@ lab_2 <- paste(lab_1, "(", per.moti, "%)")
 pie3D(table(moti), labels = lab_2, col = col_c, labelcex = .8, explode = .04) #labelcex標記文字的大小，explode立體扇形分開的程度
 
 
-#描述性統計量==============================
+#07描述性統計量==============================
 
 library(fBasics)
 attach(dsc)
@@ -578,7 +578,7 @@ pearson.test(esco) #母數統計法中，許多統計分析對於計量變數違
 sf.test(esco) #若有些達到顯著水準，有些未達，可綜合判斷，若達顯著水準的統計量較多，可做出拒絕虛無假設的結論
 
 
-#卡方檢定==============================
+#08卡方檢定==============================
 
 
 ##適合度考驗==============================
@@ -682,7 +682,7 @@ addmargins(table(pass, sex))
 fisher.test(pass, sex, alternative = "two.sided")
 
 
-#單一樣本檢定==============================
+#09單一樣本檢定==============================
 
 ##單一樣本t檢定==============================
 
@@ -740,7 +740,7 @@ prop.test(x = 7, n = 50, p = 1/4, alternative = "t")
 binom.test(x = 7, n = 50, p = 1/4, alternative = "l")
 
 
-#雙樣本檢定==============================
+#10雙樣本檢定==============================
 
 ##不同性別學生每天閱讀時間差異比較==============================
 
@@ -924,7 +924,7 @@ locationTest(typa, typb, method = "t") #改為t表示檢定的是兩變數的平
 locationTest(typa, typc, method = "t")
 
 
-#相關分析==============================
+#11相關分析==============================
 
 dco <- read.csv("cor_1.csv", header = T, fileEncoding = "BIG-5") #csv內含中文時，fileEncoding = "BIG-5"！！！)
 head(dco)
@@ -1081,7 +1081,7 @@ plotcorr(m_cor, col = "black") #繪製矩陣中所有配對變數的相關圖 #�
 plotcorr(m_cor, col = "black", diag = T, type = "lower") #type = "lower"只畫左下角，diag = T表示要畫對角線的圖示
 
 
-#單因子變異數分析==============================
+#12單因子變異數分析==============================
 
 ##整體檢定==============================
 
@@ -1263,7 +1263,7 @@ library(asbio)
 scheffeCI(anxi, factor(times), conf.level = .95)
 
 
-#二因子變異數分析==============================
+#13二因子變異數分析==============================
 
 temp <- read.csv("two_way.csv", header = TRUE, fileEncoding = "BIG-5")
 attach(temp)
@@ -1490,7 +1490,7 @@ print(summary(area3.model))
 print(TukeyHSD(area3.model))
 
 
-#典型相關==============================
+#14典型相關==============================
 
 temp <- read.csv("cancor.csv", header = TRUE, fileEncoding = "BIG-5")
 attach(temp)
@@ -1603,7 +1603,7 @@ print(ccm)
 plt.cc(ccm) #繪製觀察值或變數在典型變量上的位置
 
 
-#迴歸分析==============================
+#15迴歸分析==============================
 
 reg <- read.csv("reg_1.csv", header = TRUE, fileEncoding = "BIG-5")
 attach(reg)
@@ -1842,11 +1842,11 @@ setCor(y = 9, x = c(7, 8), data = temp, std = TRUE) #setCor()適用兩個以上�
 setCor(y = c(7, 9), x = c(3, 4, 5, 8), data = temp, std = TRUE)
 
 
-#單因子共變數分析==============================
+#16單因子共變數分析==============================
 
 
 
-#因素分析與信度分析==============================
+#17因素分析與信度分析==============================
 
 r.no <- factanal(sca[-c(3, 10, 13)], factors = 2, data = sca, rotation = "none")
 r.no$loadings
@@ -2189,13 +2189,162 @@ totscale <- efa[-c(2, 6, 16)]
 splithalf.r(totscale, graph = FALSE)
 
 
-#項目分析與試題分析==============================
+#18項目分析與試題分析==============================
 
-#二元邏輯斯迴歸分析==============================
+#19二元邏輯斯迴歸分析==============================
 
-#效果值與淨相關==============================
+#20效果值與淨相關==============================
+
+##效果值（effect size）==============================
+
+#Cohen's d: <.2微弱，<.5小，<.8中，>.8大
+
+temp <- read.csv("partial_cor.csv", header = TRUE)
+attach(temp)
+head(temp)
+
+m1 <- mean(resource[ses == 1])
+m2 <- mean(resource[ses == 2])
+var1 <- var(resource[ses == 1])
+var2 <- var(resource[ses == 2])
+
+cohend <- (m1 - m2) / sqrt(((var1 + var2) / 2))
+print(cohend)
+
+library(car)
+ses <- as.factor(temp$ses)
+var.m <- leveneTest(temp[[3]] ~ ses)
+m.test <- t.test(temp[[3]] ~ ses, alternative = "t", var.equal = FALSE)
+if(var.m$Pr[1] > .05) {
+        m.test <- t.test(temp[[3]] ~ ses, alternative = "t", var.equal = T)
+}
+print(paste("檢定變數＝", names(temp[3])))
+print(var.m)
+print(m.test) #達統計顯著水準，可進行效果量估計值強度的判別
+
+library(lsr)
+cohensD(resource ~ ses, data = temp, method = "pooled") #效果量1.25 > 0.80，為大效果值的關聯關係
 
 
+var.m <- leveneTest(temp[[4]] ~ ses)
+m.test <- t.test(temp[[4]] ~ ses, alternative = "t", var.equal = FALSE)
+if(var.m$Pr[1] > .05){
+        m.test <- t.test(temp[[4]] ~ ses, alternative = "t", var.equal = TRUE)
+}
+print(paste("檢定變數＝", names(temp[4])))
+print(var.m)
+
+cohensD(escore ~ ses, data = temp, method = "pooled") #效果量0.90 > 0.80，為大效果值的關聯關係
+
+
+#直接以公式求出
+
+m1 <- mean(escore[ses == 1])
+m2 <- mean(escore[ses == 2])
+var1 <- var(escore[ses == 1])
+var2 <- var(escore[ses == 2])
+cohend <- (m1 - m2) / sqrt(((var1 + var2) / 2))
+print(cohend)
+
+
+var.m <- leveneTest(temp[[5]] ~ ses)
+m.test <- t.test(temp[[5]] ~ ses, alternative = "t", var.equal = FALSE)
+if(var.m$Pr[1] > .05) {
+        m.test <- t.test(temp[[5]] ~ ses, alternative = "t", var.equal = TRUE)
+}
+print(paste("檢定變數＝", names(temp[[5]])))
+print(var.m)
+print(m.test) #達到統計顯著水準，可進行效果量估計值強度的判別
+
+cohensD(escore ~ ses, data = temp, method = "pooled") #效果量0.80 <= 0.8，中強度的關聯關係
+
+m1 <- mean(temp[, 5][ses == 1])
+m2 <- mean(temp[, 5][ses == 2])
+var1 <- var(temp[, 5][ses == 1])
+var2 <- var(temp[, 5][ses == 2])
+cohend <- (m1 - m2) / sqrt(((var1 + var2) / 2))
+print(cohend)
+
+
+#套件effsize的函數cohen.d()也可以進行效果量或效果值的分析
+#會呈現效果量估計值95%信賴區間，不包含0則Reject效果量估計值等於0的虛無假設
+
+install.packages("effsize")
+library(effsize)
+cohen.d(temp[, 3] ~ factor(temp$ses), pooled = TRUE, paired = FALSE) #1.247（大）
+cohen.d(temp[, 4] ~ factor(temp$ses), pooled = TRUE, paired = FALSE) #0.902（大）
+cohen.d(temp$escore ~ factor(temp$ses), pooled = TRUE, paired = FALSE) #0.800（中）
+
+
+#求出前測、後測分數間的效果量，paired參數為TRUE
+
+cohen.d(pretest, posttest, pooled = TRUE, paired = TRUE) #效果值-0.303，絕對值<0.50（小）
+
+m1 <- mean(temp[, 9])
+m2 <- mean(temp[, 10])
+var1 <- var(temp[, 9])
+var2 <- var(temp[, 10])
+cohend <- (m1 - m2) / sqrt(((var1 + var2) / 2))
+print(cohend)
+
+m1 <- mean(pretest) #前測平均分數
+m2 <- mean(posttest) #後測平均分數
+var1 <- var(pretest)
+var2 <- var(posttest)
+cohend <- (m1 - m2) / sqrt(((var1 + var2) / 2))
+print(round(cohend, 3))
+
+
+##淨相關與部分相關==============================
+
+#淨相關（partial correlation）指一組雙變數變項同時與第三個變項有關係存在，
+#排除第三個變項的影響後，配對變數間的關係稱為淨相關或偏相關
+#控制變數只有一個時，稱一階淨相關（first-order partial correlation）
+
+#假設三個變數X1, X2, X3，從自變數X2排除X3的解釋力後（X2.3），
+#變數X1和變數X2.3的相關稱為「部分相關」（part correlation），或半淨相關（semipartial correlation）
+
+
+m.cor <- cor(temp[6:8]) #零階積差相關
+round(m.cor, 3)
+
+library(psych)
+lowerCor(temp[6:8]) #下三角相關矩陣lowerCor()
+
+
+#corpcor套件中的cor2pcor()函數可以求變數間的淨相關係數
+
+library(corpcor)
+round(cor2pcor(m.cor), 3) #0.404為排除智力對物理成績與數學成績的影響後，物理成績與數學成績間的淨相關
+#零階為0.580，一階為0.404
+
+#直接求
+
+r12 <- cor(temp[7:8])
+r12 <- r12[1, 2]
+r13 <- cor(temp[c(6, 7)])
+r13 <- r13[1, 2]
+r23 <- cor(temp[c(6, 8)])
+r23 <- r23[1, 2]
+r12.3 <- (r12 - r13 * r23) / ((sqrt(1 - r13 ^ 2)) * (sqrt(1 - r23 ^ 2)))
+print(round(r12.3, 3))
+
+
+#ppcor套件的pcor.test()函數求出一階相關係數的顯著性檢定與估計值
+
+library(ppcor)
+pcor.test(temp$mscore, temp$pscore, temp$IQ, method = "pearson") #排除IQ
+#p值0.002 < 0.05，一階淨相關係數顯著不等於0
+
+
+#spcor.test()求一階半淨相關（部分相關）係數之顯著性檢定與估計值
+spcor.test(temp$msocre, temp$pscore, temp$IQ, method = "pearson") #從pscore排除IQ後，pscore與mscore的半淨相關係數
+
+
+#控制變數為resource跟IQ，mscore和pscore之二階淨相關係數
+
+pcor.test(temp$mscore, temp$pscore, temp[, c(3, 6)], method = "pearson")
+spcor.test(temp$mscore, temp$pscore, temp[, c(3, 6)], method = "pearson")
 
 
 #基礎統計分析 R程式在社會科學之應用==============================
