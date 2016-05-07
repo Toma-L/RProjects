@@ -1847,7 +1847,156 @@ str_replace(string = commands, pattern = "<.+?>(.+?)<.+>", replacement = "\\1")
 
 #14機率分佈==================================================
 
+##常態分佈（Normal Distribution）==================================================
+
+rnorm(n = 10) #從標準常態分配抽10個值
+rnorm(n = 10, mean = 100, sd = 20)
+
+randNorm10 <- rnorm(10)
+randNorm10
+
+dnorm(randNorm10) #某個值的機率，只是估計值，數學上而言是無法從pdf找到某個值的準確機率
+dnorm(c(-1, 0, 1))
+
+randNorm <- rnorm(30000)
+randDensity <- dnorm(randNorm)
+require(ggplot2)
+ggplot(data.frame(x = randNorm, y = randDensity)) + aes(x = x, y = y) + 
+        geom_point() + labs(x = "Random Normal Vairables", y = "Density")
+
+pnorm(randNorm10) #累積分佈，「小於等於」某個數的值的累積發生機率
+pnorm(c(-3, 0, 3))
+pnorm(-1)
+
+pnorm(1) - pnorm(0) #0.34
+pnorm(1) - pnorm(-1) #0.68
+
+
+#先建立一個ggplot2物件p，方便之後加上其他圖層
+
+p <- ggplot(data.frame(x = randNorm, y = randDensity)) + aes(x = x, y = y) + geom_line() + labs(x = "x", y = "Density")
+
+neg1Seq <- seq(from = min(randNorm), to = -1, by = .1)
+lessThanNeg1 <- data.frame(x = neg1Seq, y = dnorm(neg1Seq))
+head(lessThanNeg1)
+lessThanNeg1 <- rbind(c(min(randNorm), 0), lessThanNeg1, c(max(lessThanNeg1$x), 0)) #合併最左邊與最右邊的終點
+
+p + geom_polygon(data = lessThanNeg1, aes(x = x, y = y)) #geom_polygon建立陰影部分
+
+
+neg1Pos1Seq <- seq(from = -1, to = 1, by = .1)
+neg1To1 <- data.frame(x = neg1Pos1Seq, y = dnorm(neg1Pos1Seq))
+head(neg1To1)
+neg1To1 <- rbind(c(min(neg1To1$x), 0), neg1To1, c(max(neg1To1$x), 0))
+
+p + geom_polygon(data = neg1To1, aes(x = x, y = y))
+
+
+randProb <- pnorm(randNorm)
+ggplot(data.frame(x = randNorm, y = randProb)) + aes(x = x, y = y) +
+        geom_point() + labs(x = "Random Normal Variables", y = "Probability") #常態累積分配函數
+
+
+randNorm10
+qnorm(pnorm(randNorm10)) #給定累積機率，qnorm回傳此機率的分位數（原本的值）
+all.equal(randNorm10, qnorm(pnorm(randNorm10)))
+
+
+##二項分佈（Binomial Distribution）==================================================
+
+#做size次試驗，在成功機率p的情況下的成功次數，所有實驗重複n次
+#size = 1（只做一次，要不成功要不失敗），分佈將簡化為伯努利分佈（Bernoulli Distribution）
+
+rbinom(n = 1, size = 10, prob = 0.4)
+rbinom(n = 5, size = 10, prob = 0.4)
+rbinom(n = 10, size = 10, prob = 0.4)
+
+rbinom(n = 1, size = 1, prob = .4)
+rbinom(n = 5, size = 1, prob = .4)
+rbinom(n = 10, size = 1, prob = .4)
+
+binomData <- data.frame(Successes = rbinom(n = 10000, size = 10, prob = .3))
+ggplot(binomData, aes(x = Successes)) + geom_histogram(binwidth = 1)
+
+#size越大，二項分佈越接近常態分佈
+
+binom5 <- data.frame(Successes = rbinom(n = 10000, size = 5, prob = .3), Size = 5)
+dim(binom5)
+head(binom5)
+
+binom10 <- data.frame(Successes = rbinom(n = 10000, size = 10, prob = .3), Size = 10)
+dim(binom10)
+head(binom10)
+
+binom100 <- data.frame(Successes = rbinom(n = 10000, size = 100, prob = .3), Size = 100)
+binom1000 <- data.frame(Successes = rbinom(n = 10000, size = 1000, prob = .3), Size = 1000)
+
+binomAll <- rbind(binom5, binom10, binom100, binom1000)
+dim(binomAll)
+head(binomAll)
+tail(binomAll)
+
+ggplot(binomAll, aes(x = Successes)) + geom_histogram() + facet_wrap(~ Size, scales = "free")
+#當試驗次數（size）提升，分佈越接近常態
+
+dbinom(x = 3, size = 10, prob = .3) #10次成功3次的「機率」
+pbinom(q = 3, size = 10, prob = .3) #10次成功3次或以下的「機率」
+dbinom(x = 1:10, size = 10, prob = .3)
+pbinom(q = 1:10, size = 10, prob = .3)
+
+qbinom(p = .3, size = 10, prob = .3) #給機率，回傳對應的分位數
+qbinom(p = c(.3, .35, .4, .5, .6), size = 10, prob = .3)
+
+
+#泊松分佈（Poisson Distribution）==================================================
+
+#lambda越大越接近常態
+
+pois1 <- rpois(n = 10000, lambda = 1)
+pois2 <- rpois(n = 10000, lambda = 2)
+pois5 <- rpois(n = 10000, lambda = 5)
+pois10 <- rpois(n = 10000, lambda = 10)
+pois20 <- rpois(n = 10000, lambda = 20)
+pois <- data.frame(Lambda.1 = pois1, Lambda.2 = pois2, Lambda.5 = pois5,
+                   Lambda.10 = pois10, lambda.20 = pois20)
+
+require(reshape2)
+pois <- melt(data = pois, variable.name = "Lambda", value.name = "x")
+require(stringr)
+pois$Lambda <- as.factor(as.numeric(str_extract(string = pois$Lambda, pattern = "\\d+")))
+head(pois); tail(pois)
+
+require(ggplot2)
+ggplot(pois, aes(x = x)) + geom_histogram(binwidth = 1) + facet_wrap(~ Lambda) + 
+        ggtitle("Probability Mass Function")
+
+
+##其他分佈==================================================
+
+#常態（Normal）：rnorm
+#二項（Binomial）：rbinom
+#泊松（Poisson）：rpois
+#t：rt
+#F：rf
+#卡方（Chi-Squared）：rchisq
+#Gamma：rgamma
+#幾何（Geometric）：rgeom
+#負二項（Negative Binomial）：rnbinom
+#指數（Exponential）：rexp
+#韋伯（Weibull）：rweibull
+#連續均勻（Uniform）：runif
+#貝塔（Beta）：rbeta
+#柯西（Cauchy）：rcauchy
+#多項（Multinomial）：rmultinom
+#超幾何（Hypergeometric）：rhyper
+#對數常態（Log-normal）：rlnorm
+#羅吉斯（Logistic）：rlogis
+
+
 #15基本統計==================================================
+
+
+
 
 #16線性模型==================================================
 
