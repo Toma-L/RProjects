@@ -2126,6 +2126,7 @@ houseStep <- step(nullModel, scope = list(lower = nullModel, upper = fullModel, 
 houseStep #顯示被挑選的模型
 
 #LASSO迴歸是更好的變數選取方式
+#boostrap可以用來檢視模型不確定性
 
 
 #19正規化和壓縮方法==================================================
@@ -2254,6 +2255,8 @@ ggplot(alphaCast, aes(x = Alpha, y = error)) + geom_line(aes(group = Type)) + fa
 
 #20非線性模型==================================================
 
+##非線性最小平方法==================================================
+
 fileUrl <- "http://jaredlander.com/data/wifi.rdata"
 download.file(fileUrl, destfile = "wifi.rdata")
 load("wifi.rdata")
@@ -2263,11 +2266,131 @@ require(ggplot2)
 ggplot(wifi, aes(x = x, y = y, color = Distance)) + geom_point() + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = mean(wifi$Distance))
 
 
+#nls函數常用來計算非線性最小平方
+wifiMod1 <- nls(Distance ~ sqrt((betaX - x) ^ 2 + (betaY - y) ^ 2), #指定用根號模型
+                data = wifi, start = list(betaX = 50, betaY = 50)) #網格的中心作為起始值
+summary(wifiMod1)
+
+ggplot(wifi, aes(x = x, y = y, color = Distance)) + geom_point() + scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = mean(wifi$Distance)) + 
+        geom_point(data = as.data.frame(t(coef(wifiMod1))), aes(x = betaX, y = betaY), size = 5, color = "green")
+
+
+##樣條（Splines）==================================================
+
+#樣條讓一些非線性資料有較平滑的分佈，甚至可用來對新資料做預測
+#樣條實際上在每個資料點都有專屬的轉換函數f，我們要找出f的極小化
+#lambda越大，曲線越平滑
+
+data(diamonds) #以不同的自由度做平滑
+diaSpline1 <- smooth.spline(x = diamonds$carat, y = diamonds$price)
+diaSpline2 <- smooth.spline(x = diamonds$carat, y = diamonds$price, df = 2)
+diaSpline3 <- smooth.spline(x = diamonds$carat, y = diamonds$price, df = 10)
+diaSpline4 <- smooth.spline(x = diamonds$carat, y = diamonds$price, df = 20)
+diaSpline5 <- smooth.spline(x = diamonds$carat, y = diamonds$price, df = 50)
+diaSpline6 <- smooth.spline(x = diamonds$carat, y = diamonds$price, df = 100)
+
+get.spline.info <- function(object) {
+        data.frame(x = object$x, y = object$y, df = object$df)
+}
+
+require(plyr)
+
+splineDF <- ldply(list(diaSpline1, diaSpline2, diaSpline3, diaSpline4, diaSpline5, diaSpline6), get.spline.info)
+head(splineDF)
+
+g <- ggplot(diamonds, aes(x = carat, y = price)) + geom_point()
+g + geom_line(data = splineDF, aes(x = x, y = y, color = factor(round(df, 0)), group = df)) + 
+        scale_color_discrete("Degrees of \nFreedom")
+
+
+#最好的樣條為三次自然樣條，因為它在切點可以製造平滑的轉折，並在輸入資料的端點後面製造線性的現象
+#ns()函數
+
+require(splines)
+head(ns(diamonds$carat, df = 1))
+head(ns(diamonds$carat, df = 2))
+head(ns(diamonds$carat, df = 3))
+head(ns(diamonds$carat, df = 4))
+
+g <- ggplot(diamonds, aes(x = carat, y = price)) + geom_point()
+g + stat_smooth(method = "lm", formula = y ~ ns(x, 6), color = "blue") #6個切點的三次自然樣條
+g + stat_smooth(method = "lm", formula = y ~ ns(x, 3), color = "red") #3個切點的三次自然樣條
+
+
+##廣義加性模型（GAMs）==================================================
+
+creditNames <- c("Checking", "Duration", "CreditHistory", "Purpose", "CreditAmount", "Savings", "Employment", 
+                 "InstallmentRate", "GenderMarital", "OtherDebtors", "YearsAtResidence", "RealEstate", "Age", 
+                 "OtherInstallment", "Housing", "ExistingCredits", "Job", "NumLiable", "Phone", "Foreign", "Credit")
+
+theURL <- "http://archive.ics.uci.edu/ml/machine-learning-databases/statlog/german/german.data"
+credit <- read.table(theURL, sep = "", header = FALSE, col.names = creditNames, stringsAsFactors = FALSE)
+head(credit)
+
+head(credit[, c("CreditHistory", "Purpose", "Employment", "Credit")])
+creditHistory <- c(A30 = "All Paid", A31 = "All Paid This Bank", A32 = "Up To Date", A33 = "Late Payment", A34 = "Critical Account")
+purpose <- c(A40 = "car (new)", A41 = "car (used)", A42 = "furniture/equipment", A43 = "radio/television", A44 = "domestic appliances", A45 = "repairs",
+             A46 = "education", A47 = "(vacation - does not exist?)", A48 = "retraining", A49 = "business", A410 = "others")
+employment <- c(A71 = "unemployed", A72 = "< 1 year", A73 = "1 - 4 years", A74 = "4 - 7 years", A75 = "> = 7 years")
+credit$CreditHistory <- creditHistory[credit$CreditHistory]
+credit$Purpose <- purpose[credit$Purpose]
+credit$Employment <- employment[credit$Employment]
+credit$Credit <- ifelse(credit$Credit == 1, "Good", "Bad")
+credit$Credit <- factor(credit$Credit, levels = c("Good", "Bad"))
+head(credit[, c("CreditHistory", "Purpose", "Employment", "Credit")])
+
+require(useful)
+ggplot(credit, aes(x = CreditAmount, y = Credit)) + 
+        geom_jitter(position = position_jitter(height = .2)) + 
+        facet_grid(CreditHistory ~ Employment) + 
+        xlab("Credit Amount") + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = .5)) + 
+        scale_x_continuous(labels = multiple)
+
+ggplot(credit, aes(x = CreditAmount, y = Age)) + 
+        geom_point(aes(color = Credit)) + 
+        facet_grid(CreditHistory ~ Employment) + 
+        xlab("Credit Amount") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = .5)) + 
+        scale_x_continuous(labels = multiple)
+
+
+#gam可以用無母數平滑函數，例如樣條和張量積（tensor product），將連續變數作轉換
+
+creditGam <- gam(Credit ~ te(CreditAmount) + s(Age) + CreditHistory + Employment, data = credit, family = binomial(link = "logit"))
+summary(creditGam)
+
+plot(creditGam, select = 1, se = TRUE, shade = TRUE) #CrdeitAmount張量積的平滑曲線
+plot(creditGam, select = 2, se = TRUE, shade = TRUE) #Age樣條的平滑曲線
+
+#灰色陰影為平滑曲線的信賴區間
+
+
+##決策樹==================================================
+
+require(rpart)
+creditTree <- rpart(Credit ~ CreditAmount + Age + CreditHistory + Employment, data = credit)
+creditTree
+require(rpart.plot)
+rpart.plot(creditTree, extra = 4)
+
+#容易因為overfitting而導致很高的變異，模型會很不穩定，資料略有改變就會對模型造成很大影響
+
+
+##隨機森林（Random Forest）==================================================
+
+require(useful)
+require(randomForest)
+creditFormula <- Credit ~ CreditHistory + Purpose + Employment + Duration + Age + CreditAmount
+creditX <- build.x(creditFormula, data = credit)
+creditY <- build.y(creditFormula, data = credit)
+creditForest <- randomForest(x = creditX, y = creditY)
+creditForest
 
 
 #21時間序列與自相關性==================================================
 
-##自迴歸移動平均模型（Autoregressive Moving Average）
+##自迴歸移動平均模型（Autoregressive Moving Average）==================================================
 
 require(WDI)
 gdp <- WDI(country = c("US", "CA", "GB", "DE", "CN", "JP", "SG", "IL"), indicator = c("NY.GDP.PCAP.CD", "NY.GDP.MKTP.CD"), start = 1960, end = 2011)
@@ -2311,7 +2434,8 @@ theForecast <- forecast(object = usBest, h = 5)
 plot(theForecast) #陰影為信賴區間
 
 
-##VAR向量自我迴歸
+##VAR向量自我迴歸==================================================
+
 require(reshape2)
 gdpCast <- dcast(Year ~ Country, data = gdp[, c("Country", "Year", "PerCapGDP")], value.var = "PerCapGDP")
 head(gdpCast)
@@ -2346,7 +2470,7 @@ coefplot(gdpVar$varresult$Japan)
 predict(gdpVar, n.ahead = 5)
 
 
-##GARCH
+##GARCH==================================================
 
 install.packages("quantmod")
 require(quantmod)
@@ -2415,6 +2539,140 @@ infocriteria(attLogGarch) #GARCH模型目的不是要對訊號（signal）建立
 
 
 #22資料分群==================================================
+
+#K-means分群法==================================================
+
+wine <- read.table("wine.csv", header = TRUE, sep = ",")
+head(wine)
+
+wineTrain <- wine[, which(names(wine) != "Cutivar")] #cultivar和組別非常相似，先排除掉
+
+#所有資料必須是numeric！！！
+
+set.seed(278613)
+wineK3 <- kmeans(x = wineTrain, centers = 3)
+wineK3
+
+require(useful)
+plot(wineK3, data = wineTrain) #將資料投影到二維空間
+
+plot(wineK3, data = wine, class = "Cultivar")
+
+#K-means以隨機條件作開始的，建議用不同的隨機初始條件多進行幾次，用nstart參數
+
+set.seed(278613)
+wineK3N25 <- kmeans(wineTrain, centers = 3, nstart = 25)
+wineK3$size
+wineK3N25$size
+
+wineBest <- FitKMeans(wineTrain, max.clusters = 20, nstart = 25, seed = 278613) #尋找最佳分群數
+wineBest
+PlotHartigan(wineBest) #13群最佳（Hartigan法則，>10就可以增加）
+
+table(wine$Cultivar, wineK3N25$cluster)
+plot(table(wine$Cultivar, wineK3N25$cluster), main = "Confusion Matrix for wine Clustering", xlab = "Cultivar", ylab = "Cluster") #繪製混淆矩陣
+
+#除了Hartigan法則，另一個可用的是Gap統計量
+#Gap（差距）統計量，比較分群資料與自助抽樣法所抽出的樣本之間的群內相異度，測量觀測與預期之間的差距
+
+require(cluster)
+theGap <- clusGap(wineTrain, FUNcluster = pam, K.max = 20)
+gapDF <- as.data.frame(theGap$Tab)
+gapDF
+
+require(ggplot2)
+ggplot(gapDF, aes(x = 1:nrow(gapDF))) + #logW曲線
+        geom_line(aes(y = logW), color = "blue") +
+        geom_point(aes(y = logW), color = "blue") + 
+        geom_line(aes(y = E.logW), color = "green") +
+        geom_line(aes(y = E.logW), color = "green") +
+        labs(x = "Number of Clusters")
+
+ggplot(gapDF, aes(x = 1:nrow(gapDF))) + 
+        geom_line(aes(y = gap), color = "red") +
+        geom_point(aes(y = gap), color = "red") +
+        geom_errorbar(aes(ymin = gap - SE.sim, ymax = gap + SE.sim), color = "red") +
+        labs(x = "Number of Clusters", y = "Gap")
+
+#K-means不能用在類別資料，而且容易受離群值影響
+
+
+#PAM分割環繞物件法（Partitioning Around Medoids）==================================================
+
+#K-medoids最常用的演算法為PAM
+
+indicators <- c("BX.KLT.DINV.WD.GD.ZS", "NY.GDP.DEFL.KD.ZG", 
+                "NY.GDP.MKTP.CD", "NY.GDP.MKTP.KD.ZG",
+                "NY.GDP.PCAP.CD", "NY.GDP.PCAP.KD.ZG",
+                "TG.VAL.TOTL.GD.ZS")
+require(WDI)
+
+wbInfo <- WDI(country = "all", indicator = indicators, start = 2011, end = 2011, extra = TRUE)
+wbInfo <- wbInfo[wbInfo$region != "Aggregates", ] #移除Aggregates資訊
+wbInfo <- wbInfo[which(rowSums(!is.na(wbInfo[, indicators])) > 0), ] #移除指標變數為NA的國家
+wbInfo <- wbInfo[!is.na(wbInfo$iso2c), ]
+
+rownames(wbInfo) <- wbInfo$iso2c
+wbInfo$region <- factor(wbInfo$region) #因素化region, income, lending
+wbInfo$income <- factor(wbInfo$income) #這樣他們的level有任何變化都能被考量在內
+wbInfo$lending <- factor(wbInfo$lending)
+
+keep.cols <- which(!names(wbInfo) %in% c("iso2c", "country", "year", "capital", "iso3c")) #找出要保留的直行
+wbPam <- pam(x = wbInfo[, keep.cols], k = 12, keep.diss = TRUE, keep.data = TRUE) #分群
+wbPam$medoids #顯示medoid觀測值
+
+
+download.file(url = "http://jaredlander.com/data/worldmap.zip", destfile = "worldmap.zip")
+unzip(zipfile = "worldmap.zip", exdir = "data") #解壓縮也可以用R完成
+
+require(maptools)
+world <- readShapeSpatial("data/world_country_admin_boundary_shapefile_with_fips_codes.shp")
+head(world@data) #shapefile和WDI的國家編碼有差異
+
+require(plyr)
+world@data$FipsCntry <- as.character( #revalue(replace = c())
+        revalue(world@data$FipsCntry, 
+                replace = c(AU = "AT", AS = "AU", VM = "VN", BM = "MM", SP = "ES",
+                            PO = "PT", IC = "IL", SF = "ZA", TU = "TR", IZ = "IQ", 
+                            UK = "GB", EI = "IE", SU = "SD", MA = "MG", MO = "MA",
+                            JA = "JP", SW = "SE", SN = "SG")))
+
+
+#shapefile轉為data.frame才可以用ggplot2
+world@data$id <- rownames(world@data)
+require(ggplot2)
+require(rgeos)
+install.packages("gpclib") #一定要做這個
+gpclibPermit()
+world.df <- fortify(world, region = "id") #fortify()用來將shapefile轉為data.frame
+head(world.df)
+
+world.df <- join(world.df, world@data[, c("id", "CntryName", "FipsCntry")], by = "id")
+head(world.df)
+
+#開始結合分群資料和世界銀行資料
+
+clusterMembership <- data.frame(FipsCntry = names(wbPam$clustering), Cluster = wbPam$clustering, stringsAsFactors = FALSE)
+head(clusterMembership)
+
+world.df <- join(world.df, clusterMembership, by = "FipsCntry")
+world.df$Cluster <- as.character(world.df$Cluster)
+world.df$Cluster <- factor(world.df$Cluster, levels = 1:12)
+
+ggplot() + geom_polygon(data = world.df, aes(x = long, y = lat, group = group, fill = Cluster, color = Cluster)) + 
+        labs(x = NULL, y = NULL) + coord_equal() +
+        theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.ticks = element_blank(),
+              panel.background = element_blank())
+
+#PAM分群世界圖，灰色代表世銀沒有資訊，或者沒有結合好
+
+wbPam$clusinfo #相異度資訊
+
+
 
 
 #R語言程序開發==================================================

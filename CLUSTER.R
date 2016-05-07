@@ -222,6 +222,137 @@ plot(countries_Dens, type = "persp", col = grey(.8))
 
 #22資料分群==================================================
 
+#K-means分群法==================================================
+
+wine <- read.table("wine.csv", header = TRUE, sep = ",")
+head(wine)
+
+wineTrain <- wine[, which(names(wine) != "Cutivar")] #cultivar和組別非常相似，先排除掉
+
+#所有資料必須是numeric！！！
+
+set.seed(278613)
+wineK3 <- kmeans(x = wineTrain, centers = 3)
+wineK3
+
+require(useful)
+plot(wineK3, data = wineTrain) #將資料投影到二維空間
+
+plot(wineK3, data = wine, class = "Cultivar")
+
+#K-means以隨機條件作開始的，建議用不同的隨機初始條件多進行幾次，用nstart參數
+
+set.seed(278613)
+wineK3N25 <- kmeans(wineTrain, centers = 3, nstart = 25)
+wineK3$size
+wineK3N25$size
+
+wineBest <- FitKMeans(wineTrain, max.clusters = 20, nstart = 25, seed = 278613) #尋找最佳分群數
+wineBest
+PlotHartigan(wineBest) #13群最佳（Hartigan法則，>10就可以增加）
+
+table(wine$Cultivar, wineK3N25$cluster)
+plot(table(wine$Cultivar, wineK3N25$cluster), main = "Confusion Matrix for wine Clustering", xlab = "Cultivar", ylab = "Cluster") #繪製混淆矩陣
+
+#除了Hartigan法則，另一個可用的是Gap統計量
+#Gap（差距）統計量，比較分群資料與自助抽樣法所抽出的樣本之間的群內相異度，測量觀測與預期之間的差距
+
+require(cluster)
+theGap <- clusGap(wineTrain, FUNcluster = pam, K.max = 20)
+gapDF <- as.data.frame(theGap$Tab)
+gapDF
+
+require(ggplot2)
+ggplot(gapDF, aes(x = 1:nrow(gapDF))) + #logW曲線
+        geom_line(aes(y = logW), color = "blue") +
+        geom_point(aes(y = logW), color = "blue") + 
+        geom_line(aes(y = E.logW), color = "green") +
+        geom_line(aes(y = E.logW), color = "green") +
+        labs(x = "Number of Clusters")
+
+ggplot(gapDF, aes(x = 1:nrow(gapDF))) + 
+        geom_line(aes(y = gap), color = "red") +
+        geom_point(aes(y = gap), color = "red") +
+        geom_errorbar(aes(ymin = gap - SE.sim, ymax = gap + SE.sim), color = "red") +
+        labs(x = "Number of Clusters", y = "Gap")
+
+#K-means不能用在類別資料，而且容易受離群值影響
+
+
+#PAM分割環繞物件法（Partitioning Around Medoids）==================================================
+
+#K-medoids最常用的演算法為PAM
+
+indicators <- c("BX.KLT.DINV.WD.GD.ZS", "NY.GDP.DEFL.KD.ZG", 
+                "NY.GDP.MKTP.CD", "NY.GDP.MKTP.KD.ZG",
+                "NY.GDP.PCAP.CD", "NY.GDP.PCAP.KD.ZG",
+                "TG.VAL.TOTL.GD.ZS")
+require(WDI)
+
+wbInfo <- WDI(country = "all", indicator = indicators, start = 2011, end = 2011, extra = TRUE)
+wbInfo <- wbInfo[wbInfo$region != "Aggregates", ] #移除Aggregates資訊
+wbInfo <- wbInfo[which(rowSums(!is.na(wbInfo[, indicators])) > 0), ] #移除指標變數為NA的國家
+wbInfo <- wbInfo[!is.na(wbInfo$iso2c), ]
+
+rownames(wbInfo) <- wbInfo$iso2c
+wbInfo$region <- factor(wbInfo$region) #因素化region, income, lending
+wbInfo$income <- factor(wbInfo$income) #這樣他們的level有任何變化都能被考量在內
+wbInfo$lending <- factor(wbInfo$lending)
+
+keep.cols <- which(!names(wbInfo) %in% c("iso2c", "country", "year", "capital", "iso3c")) #找出要保留的直行
+wbPam <- pam(x = wbInfo[, keep.cols], k = 12, keep.diss = TRUE, keep.data = TRUE) #分群
+wbPam$medoids #顯示medoid觀測值
+
+
+download.file(url = "http://jaredlander.com/data/worldmap.zip", destfile = "worldmap.zip")
+unzip(zipfile = "worldmap.zip", exdir = "data") #解壓縮也可以用R完成
+
+require(maptools)
+world <- readShapeSpatial("data/world_country_admin_boundary_shapefile_with_fips_codes.shp")
+head(world@data) #shapefile和WDI的國家編碼有差異
+
+require(plyr)
+world@data$FipsCntry <- as.character( #revalue(replace = c())
+        revalue(world@data$FipsCntry, 
+                replace = c(AU = "AT", AS = "AU", VM = "VN", BM = "MM", SP = "ES",
+                            PO = "PT", IC = "IL", SF = "ZA", TU = "TR", IZ = "IQ", 
+                            UK = "GB", EI = "IE", SU = "SD", MA = "MG", MO = "MA",
+                            JA = "JP", SW = "SE", SN = "SG")))
+
+
+#shapefile轉為data.frame才可以用ggplot2
+world@data$id <- rownames(world@data)
+require(ggplot2)
+require(rgeos)
+install.packages("gpclib") #一定要做這個
+gpclibPermit()
+world.df <- fortify(world, region = "id") #fortify()用來將shapefile轉為data.frame
+head(world.df)
+
+world.df <- join(world.df, world@data[, c("id", "CntryName", "FipsCntry")], by = "id")
+head(world.df)
+
+#開始結合分群資料和世界銀行資料
+
+clusterMembership <- data.frame(FipsCntry = names(wbPam$clustering), Cluster = wbPam$clustering, stringsAsFactors = FALSE)
+head(clusterMembership)
+
+world.df <- join(world.df, clusterMembership, by = "FipsCntry")
+world.df$Cluster <- as.character(world.df$Cluster)
+world.df$Cluster <- factor(world.df$Cluster, levels = 1:12)
+
+ggplot() + geom_polygon(data = world.df, aes(x = long, y = lat, group = group, fill = Cluster, color = Cluster)) + 
+        labs(x = NULL, y = NULL) + coord_equal() +
+        theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.ticks = element_blank(),
+              panel.background = element_blank())
+
+#PAM分群世界圖，灰色代表世銀沒有資訊，或者沒有結合好
+
+wbPam$clusinfo #相異度資訊
 
 
 
