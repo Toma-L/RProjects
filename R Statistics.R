@@ -2661,8 +2661,192 @@ ggplot(pois, aes(x = x)) + geom_histogram(binwidth = 1) + facet_wrap(~ Lambda) +
 
 #15基本統計==================================================
 
+##摘要統計（Summary Statistics）==================================================
+
+x <- sample(x = 1:100, size = 100, replace = TRUE)
+x
+mean(x)
+y <- x
+y[sample(x = 1:100, size = 20, replace = FALSE)] <- NA
+y
+mean(y)
+mean(y, na.rm = TRUE)
+
+grades <- c(95, 72, 87, 66)
+weights <- c(1/2, 1/4, 1/8, 1/8)
+mean(grades)
+weighted.mean(x = grades, w = weights) #計算加權平均
+
+var(x)
+sum((x - mean(x)) ^ 2) / (length(x) - 1)
+sqrt(var(x))
+sd(x)
+sd(y)
+sd(y, na.rm = TRUE)
+min(x)
+max(x)
+median(x)
+min(y)
+min(y, na.rm = TRUE)
+
+summary(x)
+summary(y)
+
+quantile(x, probs = c(.25, .75)) #25、75百分位數
+quantile(y, probs = c(.25, .75)) #ERROR
+quantile(y, probs = c(.25, .75), na.rm = TRUE)
+quantile(x, probs = c(.1, .25, .5, .75, .99)) #有某個百分比的數字是「低於」該分位數
+
+
+##相關係數（correlation）和共變異數（covariance）==================================================
+
+require(ggplot2)
+head(economics)
+cor(economics$pce, economics$psavert)
+cor(economics$pce, economics$psavert)
+
+xPart <- economics$pce - mean(economics$pce)
+yPart <- economics$psavert - mean(economics$psavert)
+nMinusOne <- nrow(economics) - 1
+xSD <- sd(economics$pce)
+ySD <- sd(economics$psavert)
+sum(xPart * yPart) / (nMinusOne * xSD * ySD) #硬算
+
+cor(economics[, c(2, 4:6)])
+
+GGally::ggpairs(economics[, c(2, 4:6)]) #用::來呼叫某套件中的函數，不需載入套件
+
+
+require(reshape2)
+require(scales)
+econCor <- cor(economics[, c(2, 4:6)])
+econMelt <- melt(econCor, varnames = c("x", "y"), value.name = "Correlation")
+econMelt
+ggplot(econMelt, aes(x = x, y = y)) + 
+        geom_tile(aes(fill = Correlation)) +
+        scale_fill_gradient2(low = "black", mid = "white", high = "steelblue", #3層色彩漸層
+                             guide = guide_colorbar(ticks = FALSE, barheight = 10),  #不設刻度的色帶
+                             limits = c(-1, 1)) + #尺度範圍-1到1
+        theme_minimal() + #極簡主題
+        labs(x = NULL, y = NULL) #標題留空
+
+m <- c(9, 9, NA, 3, NA, 5, 8, 1, 10, 4)
+n <- c(2, NA, 1, 6, 6, 4, 1, 1, 6, 7)
+p <- c(8, 4, 3, 9, 10, NA, 3, NA, 9, 9)
+q <- c(10, 10, 7, 8, 4, 2, 8, 5, 5, 2)
+r <- c(1, 9, 7, 6, 5, 6, 2, 7, 9 ,10)
+theMat <- cbind(m, n, p, q, r)
+cor(theMat, use = "everything") #若任一行有NA，結果將是NA
+cor(theMat, use = "all.obs") #只要資料有NA，就會ERROR
+cor(theMat, use = "complete.obs") #只保留不含任何NA的橫列
+cor(theMat, use = "na.or.complete") #若找不到任何一個完整資料的橫列，將回傳ERROR
+cor(theMat[c(1, 4, 7, 9, 10), ])
+identical(cor(theMat, use = "complete.obs"), cor(theMat[c(1, 4, 7, 9, 10), ]))
+cor(theMat, use = "pairwise.complete.obs") #只保留兩兩都沒NA值的橫列
+cor(theMat[, c("m", "n")], use = "complete.obs")
+cor(theMat[, c("m", "p")], use = "complete.obs")
+
+data(tips, package = "reshape2")
+head(tips)
+GGally::ggpairs(tips) #依照資料是離散或連續來決定畫直方圖、箱型圖或散佈圖
+
+#相關性不蘊含因果關係
+
+cov(economics$pce, economics$psavert)
+cov(economics[, c(2, 4:6)])
+identical(cov(economics$pce, economics$psavert),
+          cor(economics$pce, economics$psavert) * sd(economics$pce) * sd(economics$psavert))
+
+
+##t檢定==================================================
+
+#t檢定用來對資料的平均數做檢定
+
+head(tips)
+unique(tips$sex)
+unique(tips$day)
+
+
+###單一樣本t檢定==================================================
+
+t.test(tips$tip, alternative = "two.sided", mu = 2.5)
+
+randT <- rt(30000, df = NROW(tips) - 1)
+tipTTest <- t.test(tips$tip, alternative = "two.sided", mu = 2.50)
+ggplot(data.frame(x = randT)) + geom_density(aes(x = x), fill = "grey", color = "grey") +
+        geom_vline(xintercept = tipTTest$statistic) +
+        geom_vline(xintercept = mean(randT) + c(-2, 2) * sd(randT), linetype = 2)
+
+#p-value：在H0為真的情況下，得到目前觀察結果「或更極端結果」的「機率」。
+#自由度：觀測值個數扣除被估計的參數個數
+
+t.test(tips$tip, alternative = "greater", mu = 2.5)
+
+
+###雙樣本t檢定==================================================
+
+aggregate(tip ~ sex, data = tips, var)
+shapiro.test(tips$tip) #檢查常態分配
+shapiro.test(tips$tip[tips$sex == "Female"])
+shapiro.test(tips$tip[tips$sex == "Male"])
+ggplot(tips, aes(x = tip, fill = sex)) + geom_histogram(binwidth = .5, alpha = 1/2)
+
+#資料非常態分配，F檢定（var.test()）和Bartlett檢定（bartlett.test()）都不能用！！！
+#用無母數Ansari-Bradley檢定來檢測變異數是否相等
+
+ansari.test(tip ~ sex, tips) #p-value = 0.376，顯示兩組樣本變異數相等
+
+t.test(tip ~ sex, data = tips, var.equal = TRUE) #FTR
+
+
+#也可以觀察兩組樣本的平均數是否相互落在「對方的兩個標準差內」來粗略判斷
+
+require(plyr)
+tipSummary <- ddply(tips, "sex", summarize, tip.mean = mean(tip), tip.sd = sd(tip),
+                    Lower = tip.mean - 2 * tip.sd / sqrt(NROW(tip)),
+                    Upper = tip.mean + 2 * tip.sd / sqrt(NROW(tip)))
+tipSummary
+ggplot(tipSummary, aes(x = tip.mean, y = sex)) + geom_point() + 
+        geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = .2)
+
+
+###成對雙樣本t檢定==================================================
+
+require(UsingR)
+head(father.son)
+t.test(father.son$fheight, father.son$sheight, paired = TRUE)
+
+heightDiff <- father.son$fheight - father.son$sheight
+ggplot(father.son, aes(x = fheight - sheight)) + 
+        geom_density() + 
+        geom_vline(xintercept = mean(heightDiff)) +
+        geom_vline(xintercept = mean(heightDiff) + 2 * c(-1, 1) * sd(heightDiff) / sqrt(nrow(father.son)), linetype = 2)
+
+
+##變異數分析（ANOVA）==================================================
+
+tipAnova <- aov(tip ~ day - 1, tips) #-1才不會有奇怪的截距項
+tipIntercept <- aov(tip ~ day, tips)
+tipAnova$coefficients
+tipIntercept$coefficients
+
+summary(tipAnova)
+tipsByDay <- ddply(tips, "day", summarise, tip.mean = mean(tip), tip.sd = sd(tip),
+                   Length = NROW(tip), tfrac = qt(p = .90, df = Length -1), 
+                   Lower = tip.mean - tfrac * tip.sd / sqrt(Length),
+                   Upper = tip.mean + tfrac * tip.sd / sqrt(Length))
+tipsByDay
+ggplot(tipsByDay, aes(x = tip.mean, y = day)) + geom_point() + 
+        geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = .3)
+
+
+#nrow只對data.frame和matrices起作用，而NROW可以回傳只有一維物件的長度
+
+nrow(tips)
+NROW(tips)
+nrow(tips$tip)
+NROW(tips$tip)
 
 
 #16線性模型==================================================
-
 
