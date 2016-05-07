@@ -355,6 +355,44 @@ ggplot() + geom_polygon(data = world.df, aes(x = long, y = lat, group = group, f
 wbPam$clusinfo #相異度資訊
 
 
+##階層分群法==================================================
+
+#不要求預先設定分群數
+#可以用在類別資料
+
+wineH <- hclust(d = dist(wineTrain))
+plot(wineH)
+
+keep.cols <- which(!names(wbInfo) %in% c("iso2c", "country", "year", "capital", "iso3c"))
+wbDaisy <- daisy(x = wbInfo[, keep.cols]) #計算「相異度矩陣」（可用在類別資料）
+wbH <- hclust(wbDaisy)
+plot(wbH)
+
+#計算距離的方法有single、complete、average、centroid，average常被認為最合適
+
+wineH1 <- hclust(dist(wineTrain), method = "single")
+wineH2 <- hclust(dist(wineTrain), method = "complete")
+wineH3 <- hclust(dist(wineTrain), method = "average")
+wineH4 <- hclust(dist(wineTrain), method = "centroid")
+
+plot(wineH1, labels = FALSE, main = "Single")
+plot(wineH2, labels  = FALSE, main = "Complete")
+plot(wineH3, labels = FALSE, main = "average")
+plot(wineH4, labels = FALSE, main = "centroid")
+
+#可以用分群數來做修剪
+plot(wineH)
+rect.hclust(wineH, k = 3, border = "red")
+rect.hclust(wineH, k = 13, border = "blue")
+
+#可以用高度來做修剪
+plot(wineH)
+rect.hclust(wineH, h = 200, border = "red")
+rect.hclust(wineH, h = 800, border = "blue")
+
+#想要更有效率，可以考慮fastcluster套件
+install.packages("fastcluster")
+
 
 #Practical Machine Learning==================================================
 
