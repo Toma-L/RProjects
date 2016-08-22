@@ -313,10 +313,34 @@ p + geom_dotplot(binwidth = .25, stackdir = "centerwhole") +
 library(gcookbook)
 ggplot(heightweight, aes(x = sex, y = heightIn)) + geom_dotplot(binaxis = "y", binwidth = .5, stackdir = "center")
 
+# 同時畫箱型圖跟點圖
+ggplot(heightweight, aes(x = sex, y = heightIn)) + geom_boxplot(outlier.colour = NA, width = .4) + 
+        geom_dotplot(binaxis = "y", binwidth = .5, stackdir = "center", fill = NA)
 
+
+# 把箱型圖畫在點圖旁邊
+ggplot(heightweight, aes(x = sex, y = heightIn)) + 
+        geom_boxplot(aes(x = as.numeric(sex) + .2, group = sex), width = .25) +
+        geom_dotplot(aes(x = as.numeric(sex) - .2, group = sex), binaxis = "y", binwidth = .5, stackdir = "center") +
+        scale_x_continuous(breaks = 1:nlevels(heightweight$sex), labels = levels(heightweight$sex))
 
 
 ## 6.12 二維資料密度圖 =====
+
+p <- ggplot(faithful, aes(x = eruptions, y = waiting))
+p + geom_point() + stat_density2d()
+
+
+p + stat_density2d(aes(colour = ..level..)) # 把密度曲面的高度映射給等高線的顏色
+
+
+# 將密度估計映射給填充色或瓦片圖的透明度
+# 柵格: raster
+# 瓦片: tile
+p + stat_density2d(aes(fill = ..density..), geom = "raster", contour = FALSE)
+p + geom_point() + stat_density2d(aes(alpha = ..density..), geom = "tile", contour = FALSE)
+
+p + stat_density2d(aes(fill = ..density..), geom = "raster", contour = FALSE, h = c(.5, 5))
 
 
 # 7. 註解 =====
