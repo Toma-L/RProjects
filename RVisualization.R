@@ -79,30 +79,186 @@ ggplot(data.frame(x = c(0, 20)), aes(x = x)) + stat_function(fun = myfun, geom =
 
 # 3. 長條圖 =====
 
-## 3.1 =====
+## 3.1 簡單長條圖 =====
+
+library(gcookbook)
+ggplot(pg_mean, aes(x = group, y = weight)) + geom_bar(stat = "identity")
+
+ggplot(BOD, aes(x = Time, y = demand)) + geom_bar(stat = "identity")
+ggplot(BOD, aes(x = factor(Time), y = demand)) + geom_bar(stat = "identity")
+
+ggplot(pg_mean, aes(x = group, y = weight)) + geom_bar(stat = "identity", fill = "lightblue", colour = "black")
 
 
+## 3.2 簇狀條形圖 =====
 
-## 3.2 =====
+cabbage_exp
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) +  # fill要用factor變數
+        geom_bar(position = "dodge",  # 水平排列
+                 stat = "identity")
 
-## 3.3 =====
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(position = "dodge", stat = "identity", colour = "black") +
+        scale_fill_brewer(palette = "Pastel1") # scale_fill_brewer(palette = "")
 
-## 3.4 =====
 
-## 3.5 =====
+ce <- cabbage_exp[1:5, ]
+ce
 
-## 3.6 =====
+ggplot(ce, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(position = "dodge", stat = "identity", colour = "black") +
+        scale_fill_brewer(palette = "Pastel1")
 
-## 3.7 =====
 
-## 3.8 =====
+## 3.3 頻度長條圖 =====
 
-## 3.9 =====
+ggplot(diamonds, aes(x = cut)) + geom_bar() # 離散型會得到bar chart
+
+ggplot(diamonds, aes(x = carat)) + geom_bar() # 連續型會得到histogram
+
+
+## 3.4 長條圖著色 =====
+
+upc <- subset(uspopchange, rank(Change) > 40)
+upc
+
+ggplot(upc, aes(x = Abb, y = Change, fill = Region)) + geom_bar(stat = "identity")
+
+ggplot(upc, aes(x = reorder(Abb, Change), y = Change, fill = Region)) + 
+        geom_bar(stat = "identity", colour = "black") +
+        scale_fill_manual(values = c("#669933", "#FFCC66")) +  # scale_fill_manual()
+        xlab("State")
+
+
+## 3.5 正負長條圖 =====
+
+csub <- subset(climate, Source == "Berkeley" & Year >= 1900)
+csub$pos <- csub$Anomaly10y >= 0
+csub
+
+ggplot(csub, aes(x = Year, y = Anomaly10y, fill = pos)) + 
+        geom_bar(stat = "identity", position = "identity")
+# position = "identity" 可以避免系統畫負值而產生的警告訊息
+
+# 但是暖色通常用於正值才對
+
+ggplot(csub, aes(x = Year, y = Anomaly10y, fill = pos)) + 
+        geom_bar(stat = "identity", position = "identity", colour = "black", size = .25) + 
+        scale_fill_manual(values = c("#CCEEFF", "#FFDDDD"), guide = FALSE)
+# size 是調整邊線寬度用的，不是長條寬度！
+# guide = FALSE 可以刪除圖例
+
+
+## 3.6 調整長條寬度和間距 =====
+
+ggplot(pg_mean, aes(x = group, y = weight)) + geom_bar(stat = "identity")
+
+
+ggplot(pg_mean, aes(x = group, y = weight)) + geom_bar(stat = "identity", width = .5)
+ggplot(pg_mean, aes(x = group, y = weight)) + geom_bar(stat = "identity", width = 1)
+
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity", width = .5, position = "dodge")
+
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity", width = .5, position = position_dodge(.7))
+# position = position_dodge()
+
+
+## 3.7 堆積長條圖 =====
+
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity")
+cabbage_exp
+
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity") + 
+        guides(fill = guide_legend(reverse = TRUE))
+# guides() 調整圖例，調整圖例的填充色順序用 fill = guide_legend(reverse = TRUE)
+
+library(plyr) # 為了使用 order = desc()
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar, order = desc(Cultivar))) + 
+        geom_bar(stat = "identity")
+# 調整堆疊順序用 order = desc()
+
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity", colour = "black") + 
+        guides(fill = guide_legend(reverse = TRUE)) +
+        scale_fill_brewer(palette = "Pastel1")
+
+
+## 3.8 百分比堆積長條圖 =====
+
+library(plyr)
+ce <- ddply(cabbage_exp, "Date", transform,  # 以Date為切割變數進行transform()
+            percent_weight = Weight / sum(Weight) * 100)
+ce
+ggplot(ce, aes(x = Date, y = percent_weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity")
+
+cabbage_exp
+ce <- ddply(cabbage_exp, "Date", transform,
+            percent_weight = Weight / sum(Weight) * 100)
+
+ggplot(ce, aes(x = Date, y = percent_weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity", colour = "black") +
+        guides(fill = guide_legend(reverse = TRUE)) +
+        scale_fill_brewer(palette = "Pastel1")
+
+
+## 3.9 加上資料標籤 =====
+
+ggplot(cabbage_exp, aes(x = interaction(Date, Cultivar), y = Weight)) +
+        geom_bar(stat = "identity") + 
+        geom_text(aes(label = Weight), vjust = 1.5, colour = "white") # 頂端下方
+
+ggplot(cabbage_exp, aes(x = interaction(Date, Cultivar), y = Weight)) +
+        geom_bar(stat = "identity") +
+        geom_text(aes(label = Weight), vjust = -.2) # 頂端上方
+# vjust 調整標籤在長條圖頂端的上或下
+
+ggplot(cabbage_exp, aes(x = interaction(Date, Cultivar), y = Weight)) + 
+        geom_bar(stat = "identity") +
+        geom_text(aes(label = Weight), vjust = -.2) + 
+        ylim(0, max(cabbage_exp$Weight) * 1.05) # 提高y軸上限
+
+ggplot(cabbage_exp, aes(x = interaction(Date, Cultivar), y = Weight)) + 
+        geom_bar(stat = "identity") + 
+        geom_text(aes(y = Weight + .1, label = Weight)) # 設定標籤的y軸位置
+
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity", position = "dodge") +
+        geom_text(aes(label = Weight), vjust = 1.5, colour = "white", 
+                  position = position_dodge(.9), size = 3) # 分類間距的default為0.9
+
+
+# 直向堆積長條圖要加入標籤之前，要先對各組資料求出累積和！
+library(plyr)
+ce <- arrange(cabbage_exp, Date, Cultivar)
+ce <- ddply(ce, "Date", transform, label_y = cumsum(Weight))
+ce
+
+ggplot(ce, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity") +
+        geom_text(aes(y = label_y, label = Weight), vjust = 1.5, colour = "white")
+
+
+ce <- arrange(cabbage_exp, Date, Cultivar)
+ce <- ddply(ce, "Date", transform, label_y = cumsum(Weight) - .5 * Weight) # 把標籤放在長條圖正中間
+ggplot(ce, aes(x = Date, y = Weight, fill = Cultivar)) +
+        geom_bar(stat = "identity") + 
+        geom_text(aes(y = label_y, label = Weight), colour = "White")
+
+ggplot(ce, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(stat = "identity", colour = "black") +
+        geom_text(aes(y = label_y, label = paste(format(Weight, nsmall = 2), "kg")), size = 4) +
+        guides(fill = guide_legend(reverse = TRUE)) +
+        scale_fill_brewer(palette = "Pastel1")
+
 
 ## 3.10 Cleveland點圖 =====
 
 # Check the name!!!
-install.packages("gcookbook")
 library(gcookbook)
 
 tophit <- tophitters2001[1:25, ]
