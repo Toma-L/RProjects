@@ -267,7 +267,187 @@ ggplot(tophit, aes(x = avg, y = name)) + geom_point()
 
 # 4. 折線圖 =====
 
+## 4.1 簡單折線圖 =====
+
+ggplot(BOD, aes(x = Time, y = demand)) + geom_line()
+BOD
+
+BOD1 <- BOD
+BOD1$Time <- factor(BOD1$Time) # 連續型變量轉factor
+ggplot(BOD1, aes(x = Time, y = demand, group = 1)) + geom_line() # 對於factor變量，要加入 group = 1 確認為同一組資料
+
+
+# 拓寬y軸範圍
+ggplot(BOD, aes(x = Time, y = demand)) + geom_line() + ylim(0, max(BOD$demand))
+ggplot(BOD, aes(x = Time, y = demand)) + geom_line() + expand_limits(y = 0)
+
+
+# 4.2 加上資料標記 =====
+
+ggplot(BOD, aes(x = Time, y = demand)) + geom_line() + geom_point()
+
+
+library(gcookbook)
+ggplot(worldpop, aes(x = Year, y = Population)) + geom_line() + geom_point()
+ggplot(worldpop, aes(x = Year, y = Population)) + geom_line() + geom_point() + scale_y_log10()
+
+
+# 4.3 多重折線圖 =====
+
+library(plyr)
+tg <- ddply(ToothGrowth, c("supp", "dose"), summarise, length = mean(len))
+ggplot(tg, aes(x = dose, y = length, colour = supp)) + geom_line()
+ggplot(tg, aes(x = dose, y = length, linetype = supp)) + geom_line() # 改變線的形狀
+
+
+# 一定一定要加 group = supp 讓電腦知道資料是一組的
+ggplot(tg, aes(x = factor(dose), y = length, colour = supp, group = supp)) + geom_line()
+
+# 錯誤示範
+ggplot(tg, aes(x = dose, y = length)) + geom_line() # 沒有正確分組造成一個x對應不只一個點
+
+
+# 缺頁 =====
+
+
+# 4.5 修改資料標記 =====
+
+ggplot(BOD, aes(x = Time, y = demand)) + geom_line() + geom_point(size = 4, shape = 22, colour = "darkred", fill = "pink")
+ggplot(BOD, aes(x = Time, y = demand)) + geom_line() + geom_point(size = 4, shape = 21, fill = "white")
+
+
+# 缺頁 =====
+
+
+# 4.7 堆積面積圖 =====
+
+ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) + geom_area()
+
+# default 的堆積順序與圖標有時是相反的，可以用 breaks 參數調整
+ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) + geom_area(colour = "black", size = .2, alpha = .4) +
+        scale_fill_brewer(palette = "Blues", breaks = rev(levels(uspopage$AgeGroup)))
+
+library(plyr)
+# 可以用 order = desc() 反轉堆積順序
+ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup, order = desc(AgeGroup))) +
+        geom_area(colour = "black", size = .2, alpha = .4) + 
+        scale_fill_brewer(palette = "Blues")
+
+
+# 缺頁 =====
+
+
+# 4.9 增加信賴區間 =====
+
+clim <- subset(climate, Source == "Berkeley", select = c("Year", "Anomaly10y", "Unc10y"))
+clim
+# geom_ribbon() 要先畫，才不會讓 geom_line() 糊掉！
+ggplot(clim, aes(x = Year, y = Anomaly10y)) + 
+        geom_ribbon(aes(ymin = Anomaly10y - Unc10y, ymax = Anomaly10y + Unc10y), alpha = .2) +
+        geom_line()
+
+ggplot(clim, aes(x = Year, y = Anomaly10y)) + 
+        geom_line(aes(y = Anomaly10y - Unc10y), colour = "grey50", linetype = "dotted") +
+        geom_line(aes(y = Anomaly10y + Unc10y), colour = "grey50", linetype = "dotted") +
+        geom_line()
+
+
 # 5. 散佈圖 =====
+
+
+# 5.1 散佈圖 =====
+
+
+# 5.2 修改點的樣式 =====
+
+heightweight[, c("sex", "ageYear", "heightIn")]
+
+ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point()
+ggplot(heightweight, aes(x = ageYear, y = heightIn, shape = sex)) + geom_point()
+
+ggplot(heightweight, aes(x = ageYear, y = heightIn, shape = sex, colour = sex)) + geom_point()
+
+ggplot(heightweight, aes(x = ageYear, y = heightIn, shape = sex, colour = sex)) + geom_point() + 
+        scale_shape_manual(values = c(1, 2)) +  # 人工選擇點的形狀
+        scale_colour_brewer(palette = "Set1") # 人工選擇點的顏色
+
+
+# 5.3 使用非內建的點形 =====
+
+ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point(shape = 3)
+ggplot(heightweight, aes(x = ageYear, y = heightIn, shape = sex)) + geom_point(size = 3) + scale_shape_manual(values = c(1, 4))
+
+
+hw <- heightweight
+hw$weightGroup <- cut(hw$weightLb, breaks = c(-Inf, 100, Inf), labels = c("< 100", ">= 100"))
+ggplot(hw, aes(x = ageYear, y = heightIn, shape = sex, fill = weightGroup)) + 
+        geom_point(size = 2.5) +
+        scale_shape_manual(values = c(21, 24)) +
+        scale_fill_manual(values = c(NA, "black"), 
+                          guide = guide_legend(override.aes = list(shape = 21)))
+
+
+# 5.4 將連續型變數映射到點的顏色或大小 =====
+
+heightweight[, c("sex", "ageYear", "heightIn", "weightLb")]
+
+ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = weightLb)) + geom_point()
+ggplot(heightweight, aes(x = ageYear, y = heightIn, size = weightLb)) + geom_point()
+
+# 人天生對顏色和大小的變化不太敏銳，因此當一個變數不需要太精密的解釋時才適合用
+
+ggplot(heightweight, aes(x = ageYear, y = heightIn, fill = weightLb)) + 
+        geom_point(shape = 21, size = 2.5) + 
+        scale_fill_gradient(low = "black", high = "white") # 黑白漸層
+
+ggplot(heightweight, aes(x = ageYear, y = heightIn, fill = weightLb)) + 
+        geom_point(shape = 21, size = 2.5) +
+        scale_fill_gradient(low = "black", high = "white", breaks = seq(70, 170, by = 20), guide = guide_legend())
+# 黑白漸層搭配離散圖標
+
+ggplot(heightweight, aes(x = ageYear, y = heightIn, size = weightLb, colour = sex)) + 
+        geom_point(alpha = .5) +
+        scale_size_area() +  # 使面積與資料值成正比
+        scale_colour_brewer(palette = "Set1")
+
+# 不同形狀的點很難比較面積大小，因此不要同時操作
+
+
+# 5.5 處理資料點重疊問題 =====
+
+# 圖形重疊（overplotting）的解決方案：
+## 半透明的點
+## 矩形資料分箱
+## 六邊形資料分箱
+## 箱型圖
+
+sp <- ggplot(diamonds, aes(x = carat, y = price))
+sp + geom_point()
+
+sp + geom_point(alpha = .1) # 90%透明度
+sp + geom_point(alpha = .01) # 99%透明度
+
+
+sp + stat_bin2d() # 分別在x軸y軸分割30組，共900個箱子
+sp + stat_bin2d(bins = 50) + scale_fill_gradient(low = "lightblue", high = "red", limits = c(0, 6000)) # 2500箱
+
+
+library(hexbin) # 使用六邊形箱子
+sp + stat_binhex() + scale_fill_gradient(low = "lightblue", high = "red", limits = c(0, 8000))
+sp + stat_binhex() + scale_fill_gradient(low = "lightblue", high = "red", breaks = c(0, 250, 500, 1000, 2000, 4000, 6000), limits = c(0, 6000))
+# 範圍外會變成灰色箱子
+
+
+# 當其中一軸或兩軸為離散型變數時，也會出現overplotting，可用 position_jitter() 增加隨機擾動
+
+sp1 <- ggplot(ChickWeight, aes(x = Time, y = weight))
+sp1 + geom_point()
+sp1 + geom_point(position = "jitter") # 跟 position_jitter() 意思一樣
+
+sp1 + geom_point(position = position_jitter(width = .5, height = 0)) # width 和 height 調整擾動值的精度
+
+
+
 
 # 6. 敘述統計 =====
 
@@ -500,6 +680,9 @@ p + stat_density2d(aes(fill = ..density..), geom = "raster", contour = FALSE, h 
 
 
 # 7. 註解 =====
+
+
+
 
 # 8. 座標軸 =====
 
