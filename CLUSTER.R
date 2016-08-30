@@ -1,4 +1,4 @@
-#資料挖礦與大數據分析==========
+# 資料挖礦與大數據分析 ==========
 
 data(USArrests)
 distance <- dist(USArrests, method = "euclidean") #還有manhattan, minkowski
@@ -67,9 +67,9 @@ for(g in 2:nrow(g_plot)) {
 kmeans(USArrests, centers = 3)$cluster
 
 
-#利用R語言打通大數據的經脈==================================================
+# 利用R語言打通大數據的經脈 =====
 
-#07分群分析==================================================
+# 07 分群分析 =====
 
 countries <- read.csv("countries.csv")
 dim(countries)
@@ -99,7 +99,7 @@ legend(countries$birth[J], countries$death[J], "JAPAN", bty = "n", xjust = .5, c
 legend(countries$birth[M], countries$death[M], countries$country[M], bty = "n", xjust = 1, cex = .8)
 
 
-##K-平均值分群==================================================
+## K-平均值分群 =====
 
 fit_km1 <- kmeans(countries[, -1], center = 3)
 print(fit_km1)
@@ -147,7 +147,7 @@ print(fit_pam2)
 which(fit_km$cluster != fit_pam$cluster)
 
 
-##系譜分群（階層式）==================================================
+## 系譜分群（階層式） =====
 
 fit_hc <- hclust(dist(countries[, -1]))
 print(fit_hc)
@@ -169,7 +169,7 @@ rect.hclust(fit_hc, k = 3, border = "dark grey")
 rect.hclust(fit_hc, k = 7, which =  c(2, 6), border = "dark grey")
 
 
-#密度分群==================================================
+# 密度分群 =====
 
 library(fpc)
 ds1 <- dbscan(countries[, -1], eps = 1, MinPts = 5)
@@ -200,7 +200,7 @@ for(i in 3:5) {
 }
 
 
-#期望值最大分群==================================================
+# EM（期望值最大分群） =====
 
 library(mclust)
 fit_EM <- Mclust(countries[, -1])
@@ -218,11 +218,11 @@ plot(countries_Dens, countries[, -1], col = "grey", nlevels = 55)
 plot(countries_Dens, type = "persp", col = grey(.8))
 
 
-#R軟體資料分析基礎與應用==================================================
+# R軟體資料分析基礎與應用 =====
 
-#22資料分群==================================================
+# 22 資料分群 =====
 
-#K-means分群法==================================================
+# K-means分群法 =====
 
 wine <- read.table("wine.csv", header = TRUE, sep = ",")
 head(wine)
@@ -279,9 +279,9 @@ ggplot(gapDF, aes(x = 1:nrow(gapDF))) +
 #K-means不能用在類別資料，而且容易受離群值影響
 
 
-#PAM分割環繞物件法（Partitioning Around Medoids）==================================================
+# PAM分割環繞物件法（Partitioning Around Medoids）=====
 
-#K-medoids最常用的演算法為PAM
+# K-medoids最常用的演算法為PAM
 
 indicators <- c("BX.KLT.DINV.WD.GD.ZS", "NY.GDP.DEFL.KD.ZG", 
                 "NY.GDP.MKTP.CD", "NY.GDP.MKTP.KD.ZG",
@@ -350,12 +350,12 @@ ggplot() + geom_polygon(data = world.df, aes(x = long, y = lat, group = group, f
               axis.ticks = element_blank(),
               panel.background = element_blank())
 
-#PAM分群世界圖，灰色代表世銀沒有資訊，或者沒有結合好
+# PAM分群世界圖，灰色代表世銀沒有資訊，或者沒有結合好
 
 wbPam$clusinfo #相異度資訊
 
 
-##階層分群法==================================================
+## 階層分群法 ==================================================
 
 #不要求預先設定分群數
 #可以用在類別資料
@@ -394,9 +394,9 @@ rect.hclust(wineH, h = 800, border = "blue")
 install.packages("fastcluster")
 
 
-#Practical Machine Learning==================================================
+# Practical Machine Learning =====
 
-#Unsupervised prediction==================================================
+# Unsupervised prediction =====
 
 data(iris)
 library(ggplot2)
