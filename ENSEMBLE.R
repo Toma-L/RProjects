@@ -342,3 +342,28 @@ creditX <- build.x(creditFormula, data = credit)
 creditY <- build.y(creditFormula, data = credit)
 creditForest <- randomForest(x = creditX, y = creditY)
 creditForest
+
+
+# R語言與數據挖掘最佳實踐和經典案例 =====
+
+## 4 - 決策樹與隨機森林 =====
+
+### 4.3 randomForest套件 =====
+
+ind <- sample(2, nrow(iris), replace = TRUE, prob = c(.7, .3))
+trainData <- iris[ind == 1, ]
+testData <- iris[ind == 2, ]
+
+library(randomForest)
+rf <- randomForest(Species ~ ., data = trainData, ntree = 100, proximity = TRUE)
+table(predict(rf), trainData$Species)
+print(rf)
+attributes(rf)
+plot(rf)
+importance(rf) # 變數的重要性
+varImpPlot(rf) # 變數的重要性（圖示）
+
+irisPred <- predict(rf, newdata = testData)
+table(irisPred, testData$Species)
+
+plot(margin(rf, testData$Species)) # 查看預測結果

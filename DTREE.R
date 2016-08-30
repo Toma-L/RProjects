@@ -311,3 +311,75 @@ require(rpart.plot)
 rpart.plot(creditTree, extra = 4)
 
 #容易因為overfitting而導致很高的變異，模型會很不穩定，資料略有改變就會對模型造成很大影響
+
+
+# R語言與數據挖掘最佳實踐和經典案例 =====
+
+## 4 - 決策樹與隨機森林 =====
+
+### 4.1 party套件 =====
+
+str(iris)
+set.seed(1234)
+ind <- sample(2, nrow(iris), replace = TRUE, prob = c(0.7, 0.3)) # 建立index
+trainData <- iris[ind == 1, ] # 分出訓練組
+testData <- iris[ind == 2, ]
+
+library(party)
+# detach(package:mvtnorm)
+# unloadNamespace("mvtnorm")
+
+myFormula <- Species ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width
+iris_ctree <- ctree(myFormula, data = trainData)
+table(predict(iris_ctree), trainData$Species)
+
+print(iris_ctree) # 輸出規則
+
+plot(iris_ctree)
+plot(iris_ctree, type = "simple")
+
+
+testPred <- predict(iris_ctree, newdata = testData)
+table(testPred, testData$Species)
+
+
+### 4.2 rpart套件 =====
+
+# install.packages("mboost")
+library(mboost)
+data("bodyfat", package="TH.data")
+dim(bodyfat)
+attributes(bodyfat)
+bodyfat[1:5, ]
+
+set.seed(1234)
+ind <- sample(2, nrow(bodyfat), replace = TRUE, prob = c(.7, .3))
+bodyfat.train <- bodyfat[ind == 1, ]
+bodyfat.test <- bodyfat[ind == 2, ]
+# install.packages("rpart")
+library(rpart)
+myFormula <- DEXfat ~ age + waistcirc + hipcirc + elbowbreadth + kneebreadth
+
+bodyfat_rpart <- rpart(myFormula, data = bodyfat.train, 
+                       control = rpart.control(minsplit = 10))
+attributes(bodyfat_rpart)
+print(bodyfat_rpart$cptable)
+
+print(bodyfat_rpart)
+plot(bodyfat_rpart)
+text(bodyfat_rpart, use.n = TRUE)
+
+
+opt <- which.min(bodyfat_rpart$cptable[, "xerror"]) # 選擇最小誤差的決策樹
+cp <- bodyfat_rpart$cptable[opt, "CP"]
+bodyfat_prune <- prune(bodyfat_rpart, cp = cp)
+print(bodyfat_prune)
+
+plot(bodyfat_prune)
+text(bodyfat_prune, use.n = TRUE)
+
+
+DEXfat_pred <- predict(bodyfat_prune, newdata = bodyfat.test)
+xlim <- range(bodyfat$DEXfat)
+plot(DEXfat_pred ~ DEXfat, data = bodyfat.test, xlab = "Observed", ylab = "Predicted", ylim = xlim, xlim = xlim)
+abline(a = 0, b = 1)
