@@ -1,3 +1,6 @@
+# 1. R 基礎 =====
+
+
 # 2. 快速探索數據 =====
 
 
@@ -307,7 +310,31 @@ ggplot(tg, aes(x = factor(dose), y = length, colour = supp, group = supp)) + geo
 ggplot(tg, aes(x = dose, y = length)) + geom_line() # 沒有正確分組造成一個x對應不只一個點
 
 
-# 缺頁 =====
+ggplot(tg, aes(x = dose, y = length, shape = supp)) + geom_line() + 
+        geom_point(size = 4)
+
+ggplot(tg, aes(x = dose, y = length, fill = supp)) + geom_line() + 
+        geom_point(size = 4, shape = 21)
+
+# 標記可能互相重疊，可以適當地左右移動 position = position_dodge()
+ggplot(tg, aes(x = dose, y = length, shape = supp)) + 
+        geom_line(position = position_dodge(.2)) + 
+        geom_point(position = position_dodge(.2), size = 4)
+
+
+# 4.4 修改線條樣式 =====
+
+ggplot(BOD, aes(x = Time, y = demand)) + 
+        geom_line(linetype = "dashed", size = 1, colour = "blue")
+
+library(plyr)
+tg <- ddply(ToothGrowth, c("supp", "dose"), summarise, length = mean(len))
+ggplot(tg, aes(x = dose, y = length, colou = supp)) + 
+        geom_line() + scale_colour_brewer(palette = "Set1")
+
+ggplot(tg, aes(x = dose, y = length, group = supp)) + 
+        geom_line(linetype = "dashed") + 
+        geom_point(shape = 22, size = 3, fill = "white")
 
 
 # 4.5 修改資料標記 =====
@@ -315,8 +342,28 @@ ggplot(tg, aes(x = dose, y = length)) + geom_line() # 沒有正確分組造成�
 ggplot(BOD, aes(x = Time, y = demand)) + geom_line() + geom_point(size = 4, shape = 22, colour = "darkred", fill = "pink")
 ggplot(BOD, aes(x = Time, y = demand)) + geom_line() + geom_point(size = 4, shape = 21, fill = "white")
 
+library(plyr)
+tg <- ddply(ToothGrowth, c("supp", "dose"), summarise, length = mean(len))
+pd <- position_dodge(.2)
+ggplot(tg, aes(x = dose, y = length, fill = supp)) + 
+        geom_line(position = pd) + 
+        geom_point(shape = 21, size = 3, position = pd) +
+        scale_fill_manual(values = c("black", "white"))
 
-# 缺頁 =====
+
+# 4.6 面積圖 =====
+
+sunspotyear <- data.frame(
+        Year = as.numeric(time(sunspot.year)),
+        Sunspots = as.numeric(sunspot.year))
+ggplot(sunspotyear, aes(x = Year, y = Sunspots)) + geom_area()
+
+ggplot(sunspotyear, aes(x = Year, y = Sunspots)) + 
+        geom_area(colour = "black", fill = "blue", alpha = .2) # 調整填充色
+
+ggplot(sunspotyear, aes(x = Year, y = Sunspots)) + 
+        geom_area(fill = "blue", alpha = .2) +  # 不設定colour就沒有底部框線
+        geom_line()
 
 
 # 4.7 堆積面積圖 =====
@@ -333,8 +380,22 @@ ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup, order = desc(AgeG
         geom_area(colour = "black", size = .2, alpha = .4) + 
         scale_fill_brewer(palette = "Blues")
 
+ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup, order = desc(AgeGroup))) +
+        geom_area(colour = NA, alpha = .4) +
+        scale_fill_brewer(palette = "Blues") +
+        geom_line(position = "stack", size = .2) # 堆積面積圖加線
 
-# 缺頁 =====
+
+# 4.8 百分比堆積面積圖 =====
+
+library(gcookbook)
+library(plyr)
+uspopage_prop <- ddply(uspopage, "Year", transform, Percent = Thousands / sum(Thousands) * 100)
+# ddply 將 uspopage 資料集，按照 Year 拆成多個獨立的 data frames
+
+ggplot(uspopage_prop, aes(x = Year, y = Percent, fill = AgeGroup)) + 
+        geom_area(colour = "black", size = .2, alpha = .4) + 
+        scale_fill_brewer(palette = "Blues", breaks = rev(levels(uspopage$AgeGroup)))
 
 
 # 4.9 增加信賴區間 =====
@@ -356,6 +417,12 @@ ggplot(clim, aes(x = Year, y = Anomaly10y)) +
 
 
 # 5.1 散佈圖 =====
+
+library(gcookbook)
+heightweight[, c("ageYear", "heightIn")]
+ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
+ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point(shape = 21)
+ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point(size = 1.5)
 
 
 # 5.2 修改點的樣式 =====
@@ -445,6 +512,144 @@ sp1 + geom_point()
 sp1 + geom_point(position = "jitter") # 跟 position_jitter() 意思一樣
 
 sp1 + geom_point(position = position_jitter(width = .5, height = 0)) # width 和 height 調整擾動值的精度
+
+sp1 + geom_boxplot(aes(group = Time))
+
+
+# 5.6 模型擬合線 =====
+
+library(gcookbook)
+sp <- ggplot(heightweight, aes(x = ageYear, y = heightIn))
+sp + geom_point() + stat_smooth(method = lm) # default 為95%信賴區間
+
+sp + geom_point() + stat_smooth(method = lm, level = .99) # 調整 level 可調整信賴區間
+
+sp + geom_point(colour = "grey60") + stat_smooth(method = lm, se = FALSE, colour = "black")
+
+# stat_smooth 的 default 是 loess曲線
+sp + geom_point(colour = "grey60") + stat_smooth()
+sp + geom_point(colour = "grey60") + stat_smooth(method = loess) # the same
+
+
+library(MASS)
+b <- biopsy
+b$classn[b$class == "benign"] <- 0
+b$classn[b$class == "malignant"] <- 1
+b
+
+ggplot(b, aes(x = V1, y = classn)) + 
+        geom_point(position = position_jitter(width = .3, height = .06), alpha = .4, shape = 21, size = 1.5) + 
+        stat_smooth(method = glm, method.args = list(family = "binomial"))
+
+
+sps <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + 
+        geom_point() + 
+        scale_colour_brewer(palette = "Set1")
+
+sps + stat_smooth() # stat_smooth() 的範圍限定在預測資料對應的範圍內
+
+sps + stat_smooth(method = lm, se = FALSE, fullrange = TRUE) # 可外推的模型要加入參數 fullrange = TRUE
+
+
+# 5.7 既有模型散佈圖加入擬合線 =====
+
+model <- lm(heightIn ~ ageYear + I(ageYear ^ 2), heightweight)
+model
+
+xmin <- min(heightweight$ageYear)
+xmax <- max(heightweight$ageYear)
+predicted <- data.frame(ageYear = seq(xmin, xmax, length.out = 100))
+
+predicted$heightIn <- predict(model, predicted)
+predicted
+
+sp <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + 
+        geom_point(colour = "grey40")
+
+sp + geom_line(data = predicted, size = 1)
+
+
+predictvals <- function(model, xvar, yvar, xrange = NULL, samples = 100, ...) {
+        if (is.null(xrange)) {
+                if (any(class(model) %in% c("lm", "glm")))
+                        xrange <- range(model$model[[xvar]])
+                else if (any(class(model) %in% "loess"))
+                        xrange <- range(model$x)
+        }
+        newdata <- data.frame(x = seq(xrange[1], xrange[2], length.out = samples))
+        names(newdata) <- xvar
+        newdata[[yvar]] <- predict(model, newdata = newdata, ...)
+        newdata
+}
+
+modlinear <- lm(heightIn ~ ageYear, heightweight)
+modloess <- loess(heightIn ~ ageYear, heightweight)
+
+lm_predicted <- predictvals(modlinear, "ageYear", "heightIn")
+loess_predicted <- predictvals(modloess, "ageYear", "heightIn")
+
+sp + geom_line(data = lm_predicted, colour = "red", size = .8) +
+        geom_line(data = loess_predicted, colour = "blue", size = .8)
+
+
+library(MASS)
+b <- biopsy
+b$classn[b$class == "benign"] <- 0
+b$classn[b$class == "malignant"] <- 1
+
+fitlogistic <- glm(classn ~ V1, b, family = binomial)
+glm_predicted <- predictvals(fitlogistic, "V1", "classn", type = "response")
+ggplot(b, aes(x = V1, y = classn)) + 
+        geom_point(position = position_jitter(width = .3, height = .08), alpha = .4, shape = 21, size = 1.5) +
+        geom_line(data = glm_predicted, colour = "#1177FF", size = 1)
+
+
+# 5.8 多模型擬合線 =====
+
+make_model <- function(data) {
+        lm(heightIn ~ ageYear, data)
+}
+
+library(gcookbook)
+library(plyr)
+models <- dlply(heightweight, "sex", .fun = make_model)
+models
+
+predvals <- ldply(models, .fun = predictvals, xvar = "ageYear", yvar = "heightIn")
+predvals
+
+ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point() + 
+        geom_line(data = predvals)
+
+
+predvals <- ldply(models, .fun = predictvals, xvar = "ageYear", yvar = "heightIn", xrange = range(heightweight$ageYear))
+# 把兩組的x軸範圍調整成相同
+ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point() + geom_line(data = predvals)
+
+
+# 5.9 散佈圖加入模型係數 =====
+
+
+
+
+# 5.10 散佈圖加入邊際地毯 =====
+
+ggplot(faithful, aes(x = eruptions, y = waiting)) + geom_point() + geom_rug()
+
+
+# 5.11 散佈圖加標籤 =====
+
+
+
+
+# 5.12 氣泡圖 =====
+
+
+
+
+# 5.13 散佈圖矩陣 =====
+
+
 
 
 
@@ -714,3 +919,12 @@ col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA")
 # 14. 輸出圖形 =====
 
 # 15. reshape =====
+
+library(gcookbook)
+heightweight
+str(heightweight)
+
+
+# 15.1 創建 data.frame =====
+
+# 15.2 提取資料
