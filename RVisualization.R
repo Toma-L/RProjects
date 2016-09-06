@@ -629,22 +629,97 @@ ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point(
 
 # 5.9 散佈圖加入模型係數 =====
 
+library(gcookbook)
+model <- lm(heightIn ~ ageYear, heightweight)
+summary(model)
 
+pred <- predictvals(model, "ageYear", "heightIn")
+sp <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point() + geom_line(data = pred)
+sp + annotate("text", label = "r^2 = 0.42", x = 16.5, y = 52) # 加入係數標籤
+sp + annotate("text", label = "r^2 == 0.42", parse = TRUE, x = 16.5, y = 52) # 用R的方式表示數學符號
+
+
+eqn <- as.character(as.expression(
+        substitute(italic(y) == a + b * italic(x) * "," ~~ italic(r)^2 ~ "=" ~ r2, 
+                   list(a = format(coef(model)[1], digits = 3),
+                        b = format(coef(model)[2], digits = 3),
+                        r2 = format(summary(model)$r.squared, digits = 2)
+                        ))))
+eqn
+
+parse(text = eqn)
+
+
+sp + annotate("text", label = eqn, parse = TRUE, x = Inf, y = -Inf, hjust = 1.1, vjust = -.5)
+# x = Inf, y = -Inf 使公式置於右下角
 
 
 # 5.10 散佈圖加入邊際地毯 =====
 
 ggplot(faithful, aes(x = eruptions, y = waiting)) + geom_point() + geom_rug()
+# marginal rugs 本質上是一個一維的散佈圖
+ggplot(faithful, aes(x = eruptions, y = waiting)) + geom_point() + 
+        geom_rug(position = "jitter", size = .2)
+# position = "jitter", size = .2 調整線寬及減輕重疊程度
 
 
 # 5.11 散佈圖加標籤 =====
 
+library(gcookbook)
+subset(countries, Year == 2009 & healthexp > 2000)
+sp <- ggplot(subset(countries, Year == 2009 & healthexp > 2000), 
+             aes(x = healthexp, y = infmortality)) + geom_point()
+sp + annotate("text", x = 4350, y = 5.4, label = "Canada") +
+        annotate("text", x = 7400, y = 6.8, label = "USA")
 
+
+sp + geom_text(aes(label = Name), size = 4) # geom_text() 可用factor或char類型的向量製作標籤
+
+
+sp + geom_text(aes(label = Name), size = 4, vjust = 0)
+sp + geom_text(aes(y = infmortality + .1, label = Name), size = 4, vjust = 0)
+
+# 左對齊 hjust = 0; 右對齊 hjust = 1
+# 用這種方法，較長的標籤會有較大的移動，此時最好用 x 增減一個值來調整
+
+sp + geom_text(aes(label = Name), size = 4, hjust = 0)
+sp + geom_text(aes(x = healthexp + 100, label = Name), size = 4, hjust = 0)
+
+
+# 如果不想要全部加上標籤，可以複製一個新的標籤
+cdat <- subset(countries, Year == 2009 & healthexp > 2000)
+cdat$Name1 <- cdat$Name
+
+idx <- cdat$Name1 %in% c("Canada", "Ireland", "United Kingdom", "United States", "New Zealand", "Iceland",
+                         "Japan", "Luxembourg", "Netherlands", "Switzerland")
+idx
+cdat$Name1[!idx] <- NA
+cdat
+
+ggplot(cdat, aes(x = healthexp, y = infmortality)) + geom_point() + 
+        geom_text(aes(x = healthexp + 100, label = Name1), size = 4, hjust = 0) + xlim(2000, 10000)
 
 
 # 5.12 氣泡圖 =====
 
+library(gcookbook)
+cdat <- subset(countries, Year == 2009 & Name %in% c("Canada", "Ireland", "United Kingdom", 
+                                                     "United States", "New Zealand", "Iceland","Japan", 
+                                                     "Luxembourg", "Netherlands", "Switzerland"))
+cdat
+p <- ggplot(cdat, aes(x = healthexp, y = infmortality, size = GDP)) + geom_point(shape = 21, colour = "black", fill = "cornsilk")
+p
+p + scale_size_area(max_size = 15) # 以GDP決定面積
 
+
+# 當x軸y軸都是類別變數，氣泡圖可以用來表示變量值
+hec <- HairEyeColor[,, "Male"] + HairEyeColor[,, "Female"] # HairEyeColor是個list
+library(reshape2)
+hec <- melt(hec, value.name = "count")
+ggplot(hec, aes(x = Eye, y = Hair)) + geom_point(aes(size = count), shape = 21, colour = "black", fill = "cornsilk") +
+        scale_size_area(max_size = 20, guide = FALSE) + 
+        geom_text(aes(y = as.numeric(Hair) - sqrt(count) / 22, label = count), vjust = 1, colour = "grey60", size = 4)
+# 此處的y座標是計算得出
 
 
 # 5.13 散佈圖矩陣 =====
