@@ -724,9 +724,51 @@ ggplot(hec, aes(x = Eye, y = Hair)) + geom_point(aes(size = count), shape = 21, 
 
 # 5.13 散佈圖矩陣 =====
 
+library(gcookbook)
+c2009 <- subset(countries, Year == 2009, select = c(Name, GDP, laborrate, healthexp, infmortality))
+c2009
+pairs(c2009[, 2:5])
 
 
+# 自定義的面板函數
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
+        usr <- par("usr")
+        on.exit(par(usr))
+        par(usr = c(0, 1, 0, 1))
+        r <- abs(cor(x, y, use = "complete.obs"))
+        txt <- format(c(r, 0.123456789), digits = digits)[1]
+        txt <- paste(prefix, txt, sep = "")
+        if(missing(cex.cor)) cex.cor <- 0.8 / strwidth(txt)
+        text(.5, .5, txt, cex = cex.cor * (1 + r) / 2)
+}
 
+panel.hist <- function(x, ...) {
+        usr <- par("usr")
+        on.exit(par(usr))
+        par(usr = c(usr[1:2], 0, 1.5))
+        h <- hist(x, plot = FALSE)
+        breaks <- h$breaks
+        nB <- length(breaks)
+        y <- h$counts
+        y <- y / max(y)
+        rect(breaks[-nB], 0, breaks[-1], y, col = "white", ...)
+}
+
+pairs(c2009[, 2:5], 
+      upper.panel = panel.cor,
+      diag.panel = panel.hist,
+      lower.panel = panel.smooth)
+
+panel.lm <- function(x, y, col = par("col"), bg = NA, pch = par("pch"),
+                     cex = 1, col.smooth = "black", ...) {
+        points(x, y, pch = pch, col = col, bg = bg, cex = cex)
+        abline(stats::lm(y ~ x), col = col.smooth, ...)
+}
+
+pairs(c2009[, 2:5], pch = ".", # 用小一點的點，方便辨認數據，或用 cex 參數
+      upper.panel = panel.cor,
+      diag.panel = panel.hist,
+      lower.panel = panel.lm)
 
 
 # 6. 敘述統計 =====
@@ -958,48 +1000,3 @@ p + geom_point() + stat_density2d(aes(alpha = ..density..), geom = "tile", conto
 
 p + stat_density2d(aes(fill = ..density..), geom = "raster", contour = FALSE, h = c(.5, 5))
 
-
-# 7. 註解 =====
-
-
-
-
-# 8. 座標軸 =====
-
-# 9. 整體外觀 =====
-
-# 10. 圖例 =====
-
-# 11. 分面 =====
-
-# 12. 配色 =====
-
-# 13. 其他圖形 =====
-
-## 13.1 相關係數矩陣圖 =====
-
-mcor <- cor(mtcars)
-round(mcor, digits = 2)
-library(corrplot)
-corrplot(mcor)
-
-corrplot(mcor, method = "shade", shade.col = NA, tl.col = "black", tl.srt = 45)
-
-col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
-# corrplot(mcor, method = "shade", shade.col = NA, tl.col = "black", 
-#         tl.srt = 45, col = col(200), addCoef.col = "black", 
-#         cl.pos = "no", order = "AOE") # Error
-
-
-# 14. 輸出圖形 =====
-
-# 15. reshape =====
-
-library(gcookbook)
-heightweight
-str(heightweight)
-
-
-# 15.1 創建 data.frame =====
-
-# 15.2 提取資料
