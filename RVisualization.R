@@ -1000,3 +1000,116 @@ p + geom_point() + stat_density2d(aes(alpha = ..density..), geom = "tile", conto
 
 p + stat_density2d(aes(fill = ..density..), geom = "raster", contour = FALSE, h = c(.5, 5))
 
+
+# 7. 註解 =====
+
+## 7.1 添加文本註解 =====
+
+p <- ggplot(faithful, aes(x= eruptions, y = waiting)) + geom_point()
+p + annotate("text", x = 3, y = 48, label = "Group 1") + 
+        annotate("text", x = 4.5, y = 66, label = "Group 2")
+
+p + annotate("text", x = 3, y = 48, label = "Group 1", family = "serif", fontface = "italic", 
+             colour = "darkred", size = 3) + 
+        annotate("text", x = 4.5, y = 66, label = "Group 2", family = "serif", fontface = "italic", 
+                 colour = "darkred", size = 3)
+
+# 如果使用 geom_text() ，文本會在相同位置被遮蓋
+p + annotate("text", x = 3, y = 48, label = "Group 1", alpha = .1) + 
+        geom_text(x = 4.5, y = 66, label = "Group 2", alpha = .1)
+
+p + annotate("text", x = -Inf, y = Inf, label = "Upper left", hjust = -.2, vjust = 2) + 
+        annotate("text", x = mean(range(faithful$eruptions)), y = -Inf, vjust = -.4, label = "Bottom middle")
+# Inf, -Inf 在繪圖區邊緣放置文本，hjust, vjust 調整文本相對於邊緣的位置
+
+
+## 7.2 在註解中用數學方程式 =====
+
+p <- ggplot(data.frame(x = c(-3, 3)), aes(x = x)) + stat_function(fun = dnorm)
+p + annotate("text", x = 2, y = .3, parse = TRUE, label = "frac(1, sqrt(2 * pi)) * e ^ {-x ^ 2 / 2}")
+# 加 parse = TRUE
+# 內部引號閉合的每一部分都會被當作數學方程式的一個變量，要讓乘號 * 變可見要用 %*%
+
+p + annotate("text", x = 0, y = .05, parse = TRUE, size = 4, label = "'Function: ' * y == frac(1, sqrt(2 * pi)) * e ^ {-x ^ 2 / 2}")
+# ?plotmath 看更多數學方程
+# ?demo(plotmath) 看數學方程的圖示
+
+
+## 7.3 添加直線 =====
+
+library(gcookbook)
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point()
+p + geom_hline(yintercept = 60) + geom_vline(xintercept = 14)
+p + geom_abline(intercept = 37.4, slope = 1.75)
+
+library(plyr)
+hw_means <- ddply(heightweight, "sex", summarise, heightIn = mean(heightIn))
+hw_means
+
+p + geom_hline(aes(yintercept = heightIn, colour = sex), data = hw_means, linetype = "dashed", size = 1)
+
+
+# 若 x 軸為離散型變數
+pg <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_point()
+pg + geom_vline(xintercept = 1)
+pg + geom_vline(xintercept = which(levels(PlantGrowth$group) == "ctrl"))
+
+
+## 7.4 添加線段和箭頭 =====
+
+library(gcookbook)
+p <- ggplot(subset(climate, Source == "Berkeley"), aes(x = Year, y = Anomaly10y)) + geom_line()
+p + annotate("segment", x = 1950, xend = 1980, y = -.25, yend = -.25)
+
+library(grid)
+p + annotate("segment", x = 1850, xend = 1820, y = -.8, yend = -.95, colour = "blue", size = 2, arrow = arrow()) + 
+        annotate("segment", x = 1950, xend = 1980, y = -.25, yend = -.25, arrow = arrow(ends = "both", angle = 90, length = unit(.2, "cm")))
+# 前者為30度箭頭，後者為90度雙箭頭
+
+
+## 7.5 添加矩形陰影 =====
+
+library(gcookbook)
+p <- ggplot(subset(climate, Source == "Berkeley"), aes(x = Year, y = Anomaly10y)) + geom_line()
+p + annotate("rect", xmin = 1950, xmax = 1980, ymin = -1, ymax = 1, alpha = .1, fill = "blue")
+
+
+# 8. 座標軸 =====
+
+# 9. 整體外觀 =====
+
+# 10. 圖例 =====
+
+# 11. 分面 =====
+
+# 12. 配色 =====
+
+# 13. 其他圖形 =====
+
+## 13.1 相關係數矩陣圖 =====
+
+mcor <- cor(mtcars)
+round(mcor, digits = 2)
+library(corrplot)
+corrplot(mcor)
+
+corrplot(mcor, method = "shade", shade.col = NA, tl.col = "black", tl.srt = 45)
+
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+# corrplot(mcor, method = "shade", shade.col = NA, tl.col = "black", 
+#         tl.srt = 45, col = col(200), addCoef.col = "black", 
+#         cl.pos = "no", order = "AOE") # Error
+
+
+# 14. 輸出圖形 =====
+
+# 15. reshape =====
+
+library(gcookbook)
+heightweight
+str(heightweight)
+
+
+# 15.1 創建 data.frame =====
+
+# 15.2 提取資料
