@@ -137,7 +137,7 @@ table(restData$nearMe)
 restData$zipWrong <- ifelse(restData$zipCode < 0, TRUE, FALSE)
 table(restData$zipWrong, restData$zipCode < 0)
 
-restData$zipGroups <- cut(restData$zipCode, breaks = quantile(restData$zipCode)) #cut()
+restData$zipGroups <- cut(restData$zipCode, breaks = quantile(restData$zipCode)) #cut() # 可加入 label = () 參數
 table(restData$zipGroups)
 table(restData$zipGroups, restData$zipCode)
 
@@ -754,3 +754,26 @@ str_replace(string = commands, pattern = "<.+?>(.+?)<.+>", replacement = "\\1")
 #?代表非貪婪搜尋，採用貪婪搜尋若字串中多組符合匹配結果，可能會抓到額外內容
 #\\1是回溯引用的符號，將搜尋的規則取代掉，1代表用搜尋的第一組文字做取代
 #完成整詳見?regex
+
+
+# DataCamp =====
+
+# 資料框整理技巧 =====
+
+library(tidyr)
+straw_hat_long_df <- gather(straw_hat_wide_df, key = var, value = name, age, height)
+straw_hat_wide_df <- spread(straw_hat_long_df, key = cate, value = int)
+
+straw_hat_df_devil_fruit <- merge(straw_hat_df, straw_hat_devil_fruit, all.x = TRUE) # 保留左邊所有row
+
+
+# Cleaning Data in R =====
+
+library(dplyr)
+glimpse(bmi)
+
+bmi_long <- gather(bmi, year, bmi_val, -Country)
+bmi_wide <- spread(bmi_long, year, bmi_val)
+
+bmi_cc_clean <- separate(bmi_cc, col = Country_ISO, into = c("Country", "ISO"), sep = "/")
+bmi_cc <- unite(bmi_cc_clean, Country_ISO, Country, ISO, sep = "-")
