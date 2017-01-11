@@ -96,6 +96,7 @@ ggplot(pg_mean, aes(x = group, y = weight)) + geom_bar(stat = "identity", fill =
 ## 3.2 簇狀條形圖 =====
 
 cabbage_exp
+class(cabbage_exp$Cultivar); class(cabbage_exp$Date)
 ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) +  # fill要用factor變數
         geom_bar(position = "dodge",  # 水平排列
                  stat = "identity")
@@ -1074,6 +1075,50 @@ p <- ggplot(subset(climate, Source == "Berkeley"), aes(x = Year, y = Anomaly10y)
 p + annotate("rect", xmin = 1950, xmax = 1980, ymin = -1, ymax = 1, alpha = .1, fill = "blue")
 
 
+## 7.6 高亮某一元素 =====
+
+pg <- PlantGrowth
+pg$h1 <- "no"
+pg$h1[pg$group == "trt2"] <- "yes"
+ggplot(pg, aes(x = group, y = weight, fill = h1)) + geom_boxplot() + 
+        scale_fill_manual(values = c("grey85", "#FFDDCC"), guide = FALSE)
+
+ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot() + 
+        scale_fill_manual(values = c("grey85", "grey85", "#FFDDCC"), guide = FALSE)
+
+
+## 7.7 添加誤差線 =====
+
+library(gcookbook)
+ce <- subset(cabbage_exp, Cultivar == "c39")
+ggplot(ce, aes(x = Date, y = Weight)) + 
+        geom_bar(fill = "white", colour = "black", stat = "identity") + 
+        geom_errorbar(aes(ymin = Weight - se, ymax = Weight + se), width = .2)
+
+ggplot(ce, aes(x = Date, y = Weight)) + 
+        geom_line(aes(group = 1)) + 
+        geom_point(size = 4) + 
+        geom_errorbar(aes(ymin = Weight - se, ymax = Weight + se), width = .2)
+
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(position = "dodge", stat = "identity") +  # 並列
+        geom_errorbar(aes(ymin = Weight - se, ymax = Weight + se), position = "dodge", width = .2)
+
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(position = "dodge", stat = "identity") + 
+        geom_errorbar(aes(ymin = Weight - se, ymax = Weight + se), position = position_dodge(.9), width = .2)
+
+# position = "dodge"即為position = position_dodge()的縮寫版本
+
+pd <- position_dodge(.3)
+ggplot(cabbage_exp, aes(x = Date, y = Weight, colour = Cultivar, group = Cultivar)) + 
+        geom_errorbar(aes(ymin = Weight - se, ymax = Weight + se), width = .2, size = .25, colour = "black", position = pd) + 
+        geom_line(position = pd) + 
+        geom_point(position = pd, size = 2.5)
+
+
+## 7.8 向獨立分面添加註解 =====
+
 # 8. 座標軸 =====
 
 # 9. 整體外觀 =====
@@ -1111,5 +1156,17 @@ str(heightweight)
 
 
 # 15.1 創建 data.frame =====
+
+g <- c("A", "B", "C")
+x <- 1:3
+dat <- data.frame(g, x)
+dat
+
+lst <- list(group = g, value = x)
+dat <- as.data.frame(lst)
+
+
+# 15.2 從數據框中提取訊息 =====
+
 
 # 15.2 提取資料
