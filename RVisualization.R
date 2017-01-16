@@ -1119,7 +1119,139 @@ ggplot(cabbage_exp, aes(x = Date, y = Weight, colour = Cultivar, group = Cultiva
 
 ## 7.8 向獨立分面添加註解 =====
 
+p <- ggplot(mpg, aes(x = displ, y = hwy)) + geom_point() + facet_grid(. ~ drv)
+f_labels <- data.frame(drv = c("4", "f", "r"), label = c("4wd", "Front", "Rear"))
+p + geom_text(x = 6, y = 40, aes(label = label), data = f_labels)
+p + annotate("text", x = 6, y = 42, label = "label text")
+
+
+lm_labels <- function(dat) {
+        mod <- lm(hwy ~ displ, data = dat)
+        formula <- sprintf("italic(y) == %.2f %+.2f * italic(x)",
+                           round(coef(mod)[1], 2), round(coef(mod)[2], 2))
+        r <- cor(dat$displ, dat$hwy)
+        r2 <- sprintf("italic(R ^ 2) == %.2f", r ^ 2)
+        data.frame(formula = formula, r2 = r2, stringsAsFactors = FALSE)
+}
+
+library(plyr)
+labels <- ddply(mpg, "drv", lm_labels)
+labels
+
+p + geom_smooth(method = lm, se = FALSE) + 
+        geom_text(x = 3, y = 40, aes(label = formula), data = labels, parse = TRUE, hjust = 0) + 
+        geom_text(x = 3, y = 34, aes(label = r2), data = labels, parse = TRUE, hjust = 0)
+
+labels <- ddply(mpg, "drv", summarise, r2 = cor(displ, hwy) ^ 2)
+labels$r2 <- sprintf("italic(R ^ 2) == %.2f", labels$r2)
+
+
 # 8. 座標軸 =====
+
+## 8.1 交換x軸和y軸 =====
+
+ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
+ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + coord_flip()
+
+ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + coord_flip() + 
+        scale_x_discrete(limits = rev(levels(PlantGrowth$group))) # 反轉因子的排列順序
+
+
+## 8.2 設置連續型座標軸的值域 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y= weight)) + geom_boxplot()
+p
+
+p + ylim(0, max(PlantGrowth$weight))
+
+
+ylim(0, 10)
+scale_y_continuous(limits = c(0, 10)) # 兩式等價
+
+
+p + ylim(0, 10) + scale_y_continuous(breaks = c(0, 5, 10))
+p + scale_y_continuous(breaks = c(0, 5, 10)) + ylim(0, 10) # 同時使用會產生錯誤
+p + scale_y_continuous(limits = c(0, 10), breaks = c(0, 5, 10)) # 想同時生效可加在參數
+
+p + scale_y_continuous(limits = c(5, 6.5)) # 限制y的值域會使得部分資料被剪除
+p + coord_cartesian(ylim = c(5, 6.5)) # 此法純粹縮放
+
+
+p + expand_limits(y = 0) # 擴展值域
+
+
+# 8.3 反轉一條連續型座標軸 =====
+
+ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + 
+        scale_y_reverse() # y軸刻度反轉
+
+ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + ylim(6.5, 3.5)
+
+
+ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + scale_y_reverse(limits = c(8, 0))
+# ylim()與scale_y_reverse()同樣不能配合，要設定在參數
+
+
+## 8,4 修改類別型座標軸上項目的順序 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
+p + scale_x_discrete(limits = c("trt1", "ctrl", "trt2"))
+
+
+p + scale_x_discrete(limits = c("ctrl", "trt1")) # 只展示部分類別
+p + scale_x_discrete(limits = rev(levels(PlantGrowth$group))) # 反轉類別順序
+
+
+## 8.5 設置x軸和y軸的縮放比例 =====
+
+library(gcookbook)
+sp <- ggplot(marathon, aes(x = Half, y = Full)) + geom_point()
+sp + coord_fixed() # 等長縮放座標軸
+
+sp + coord_fixed() + 
+        scale_y_continuous(breaks = seq(0, 420, 30)) + 
+        scale_x_continuous(breaks = seq(0, 420, 30)) # 指定位置放刻度線
+
+sp + coord_fixed(ratio = 1/2) +  # 讓座標軸延伸
+        scale_y_continuous(breaks = seq(0, 420, 30)) + 
+        scale_x_continuous(breaks = seq(0, 420, 15))
+
+## 8.6 設置刻度線的位置 =====
+
+ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
+ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + 
+        scale_y_continuous(breaks = c(4, 4.25, 4.5, 5, 6, 8))
+
+seq(4, 7, by = .5)
+
+ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + 
+        scale_x_discrete(limits = c("trt2", "ctrl"), breaks = "ctrl") # 用limits篩選組別
+
+
+## 8.7 移除刻度線和標籤 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
+p + theme(axis.text.y = element_blank()) # 移除刻度標籤
+
+p + theme(axis.ticks = element_blank(), axis.text.y = element_blank()) # 移除兩軸刻度線
+
+p + scale_y_continuous(breaks = NULL) # 移除刻度線、刻度標籤和網格線
+
+
+## 8.8 修改刻度標籤的文本 =====
+
+library(gcookbook)
+hwp <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
+hwp + scale_y_continuous(breaks = c(50, 56, 60, 66, 72), labels = c("Tiny", "Really\nshort", "Short", "Medium", "Tallish"))
+# \n 指的是換行！
+
+
+footinch_formatter <- function(x) {
+        foot <- floor(x / 12)
+        inch <- x %% 12
+        return(paste(foot, "'", inch, "\"", sep = "")) # \"加反斜線是為了區分引號字符與參數引號
+}
+
 
 # 9. 整體外觀 =====
 
