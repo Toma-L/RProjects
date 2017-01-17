@@ -1252,6 +1252,106 @@ footinch_formatter <- function(x) {
         return(paste(foot, "'", inch, "\"", sep = "")) # \"加反斜線是為了區分引號字符與參數引號
 }
 
+footinch_formatter(56:64)
+hwp + scale_y_continuous(labels = footinch_formatter)
+
+
+timeHMS_formatter <- function(x) {
+        h <- floor(x / 60)
+        m <- floor(x %% 60)
+        s <- round(60 * (x %% 1))
+        lab <- sprintf("%02d:%02d:%02d", h, m, s)
+        lab <- gsub("^00:", "", lab) # 開頭為00:則移除
+        lab <- gsub("^0", "", lab) # 開頭為0則移除
+        return(lab)
+}
+
+timeHMS_formatter(c(.33, 50, 51.25, 59.32, 60, 60.1, 130.23))
+
+# library(scales)
+# comma()：在數字加入逗號
+# dollar()：將美元加入符號並四捨五入到最接近的美分
+# percent()：乘以100並加上百分符號
+# scientific()：科學記數法
+
+
+## 8.9 修改刻度標籤的外觀 =====
+
+bp <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + 
+        scale_x_discrete(breaks = c("ctrl", "trt1", "trt2"), labels = c("Control", " Treatment 1", "Treatment 2"))
+
+bp + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = .5)) # 標籤轉90度
+
+bp + theme(axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1))
+
+bp + theme(axis.text.x = element_text(family = "Times", face = "italic", colour = "darkred", size = rel(0.9)))
+# rel(0.9)指的是目前主題基礎字體大小的0.9倍
+
+
+## 8.10 修改座標軸標籤的文本 =====
+
+library(gcookbook)
+
+hwp <- ggplot(heightweight, aes(x = ageYear, y= heightIn, colour = sex)) + geom_point()
+hwp
+
+hwp + xlab("Age in years") + ylab("Height in inches")
+
+hwp + labs(x = "Age in years", y = "Height in inches")
+hwp + scale_x_continuous(name = "Age in years")
+
+hwp + scale_x_continuous(name = "Age\n(years)")
+
+
+## 8.11 移除座標軸標籤 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
+p + theme(axis.title.x = element_blank()) # 隱藏x軸標籤
+
+p + xlab("") # 另一種做法，但塗上還是會為x軸標籤留出空間
+
+
+## 8.12 修改座標軸標籤的外觀 =====
+
+library(gcookbook)
+hwp <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
+hwp + theme(axis.title.x = element_text(face = "italic", colour = "darkred", size = 14))
+
+
+hwp + ylab("Height\n(inches)") + 
+        theme(axis.title.y = element_text(angle = 0, face = "italic", size = 14))
+
+hwp + ylab("Height\n(inches)") + 
+        theme(axis.title.y = element_text(angle = 90, face = "italic", colour = "darkred", size = 14))
+
+
+## 8.13 沿座標軸顯示直線 =====
+
+library(gcookbook)
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
+p + theme(axis.line = element_line(colour = "black"))
+
+p + theme_bw() + 
+        theme(panel.border = element_blank(), axis.line = element_line(colour = "black"))
+
+p + theme_bw() + 
+        theme(panel.border = element_blank(), axis.line = element_line(colour = "black", size = 4, lineend = "square"))
+
+
+## 8.14 使用對數座標軸 =====
+
+library(MASS)
+p <- ggplot(Animals, aes(x = body, y = brain, label = rownames(Animals))) + 
+        geom_text(size = 3)
+p
+
+
+## 8.15 為對數座標軸添加刻度 =====
+
+## 8.16 繪製環狀圖形 =====
+
+## 8.17 在座標軸上使用日期 =====
+
 
 # 9. 整體外觀 =====
 
