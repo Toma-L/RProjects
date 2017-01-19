@@ -1345,12 +1345,106 @@ p <- ggplot(Animals, aes(x = body, y = brain, label = rownames(Animals))) +
         geom_text(size = 3)
 p
 
+p + scale_x_log10() + scale_y_log10()
+
+p + scale_x_log10(breaks = 10 ^ (-1:5)) + scale_y_log10(breaks = 10 ^ (0:3))
+
+
+library(scales)
+p + scale_x_log10(breaks = 10 ^ (-1:5), labels = trans_format("log10", math_format(10 ^ .x))) + 
+        scale_y_log10(breaks = 10 ^ (0:3), labels = trans_format("log10", math_format(10 ^ .x))) # 用scale套件的trans_format()函數即可
+
+
+# 也可以先轉換再畫圖
+ggplot(Animals, aes(x = log10(body), y = log10(brain), label = rownames(Animals))) + geom_text(size = 3)
+
+
+library(scales)
+p + scale_x_continuous(trans = log_trans(),
+                       breaks = trans_breaks("log", function(x) exp(x)),
+                       labels = trans_format("log", math_format(e ^ .x))) + 
+        scale_y_continuous(trans = log2_trans(),
+                           breaks = trans_breaks("log2", function(x) 2 ^ x),
+                           labels = trans_format("log2", math_format(2 ^ .x)))
+
+library(gcookbook)
+ggplot(aapl, aes(x = date, y = adj_price)) + geom_line()
+# 對數轉換對金融資料很有用
+ggplot(aapl, aes(x = date, y = adj_price)) + geom_line() + scale_y_log10(breaks = c(2, 10, 50, 250))
+
 
 ## 8.15 為對數座標軸添加刻度 =====
 
+library(MASS)
+library(scales)
+ggplot(Animals, aes(x = body, y = brain, label = rownames(Animals))) + 
+        geom_text(size = 3) + 
+        annotation_logticks() + 
+        scale_x_log10(breaks = trans_breaks("log10", function(x) 10 ^ x),
+                      labels = trans_format("log10", math_format(10 ^ .x))) + 
+        scale_y_log10(breaks = trans_breaks("log10", function(x) 10 ^ x),
+                      labels = trans_format("log10", math_format(10 ^ .x)))
+
+ggplot(Animals, aes(x = body, y = brain, label = rownames(Animals))) + 
+        geom_text(size = 3) + 
+        annotation_logticks() + 
+        scale_x_log10(breaks = trans_breaks("log10", function(x) 10 ^ x),
+                      labels = trans_format("log10", math_format(10 ^ .x)),
+                      minor_breaks = log10(5) + -2:5) + 
+        scale_y_log10(breaks = trans_breaks("log10", function(x) 10 ^ x), 
+                      labels = trans_format("log10", math_format(10 ^ .x)), 
+                      minor_breaks = log10(5) + -1:3) + 
+        coord_fixed() + 
+        theme_bw()
+
+
 ## 8.16 繪製環狀圖形 =====
 
+library(gcookbook)
+head(wind)
+ggplot(wind, aes(x = DirCat, fill = SpeedCat)) + 
+        geom_histogram(binwidth = 15, origin = -7.5) + 
+        coord_polar() + 
+        scale_x_continuous(limits = c(0, 360))
+
+ggplot(wind, aes(x = DirCat, fill = SpeedCat)) + 
+        geom_histogram(binwidth = 15, origin = -7.5, colour = "black", size = .25) + 
+        guides(fill = guide_legend(reverse = TRUE)) + 
+        coord_polar() + 
+        scale_x_continuous(limits = c(0, 360), breaks = seq(0, 360, by = 45), minor_breaks = seq(0, 360, by = 15)) + 
+        scale_fill_brewer()
+
+ggplot(wind, aes(x = DirCat, fill = SpeedCat)) + 
+        geom_histogram(binwidth = 15, origin = -7.5, colour = "black", size = .25) + 
+        guides(fill = guide_legend(reverse = TRUE)) + 
+        coord_polar(start = -45 * pi / 180) +  # 設置圖形起始角度
+        scale_x_continuous(limits = c(0, 360), breaks = seq(0, 360, by = 45), minor_breaks = seq(0, 360, by = 15)) + 
+        scale_fill_brewer()
+
+
+md <- data.frame(deaths = as.numeric(mdeaths), 
+                 month = as.numeric(cycle(mdeaths)))
+library(plyr)
+md <- ddply(md, "month", summarise, deaths = mean(deaths))
+md
+
+p <- ggplot(md, aes(x = month, y = deaths)) + geom_line() + 
+        scale_x_continuous(breaks = 1:12)
+p + coord_polar() # 線幾何極座標圖
+p + coord_polar() + ylim(0, max(md$deaths))
+p + coord_polar() + ylim(0, max(md$deaths)) + xlim(0, 12) # 設置界限0來解決1跟12在同樣角度的問題
+
+
+mdx <- md[md$month == 12, ]
+mdx$month <- 0 # 新增一筆0月資料，資料跟尾巴（12月）一樣，就可以將起點終點連起來
+mdnew <- rbind(mdx, md)
+
+p %+% mdnew + coord_polar() + ylim(0, max(md$deaths)) # %+% 新資料 ---> 畫原本的圖，但使用新資料
+
+
 ## 8.17 在座標軸上使用日期 =====
+
+## 8.18 在座標軸上使用相對時間 =====
 
 
 # 9. 整體外觀 =====
@@ -1367,6 +1461,7 @@ p
 
 mcor <- cor(mtcars)
 round(mcor, digits = 2)
+# install.packages("corrplot")
 library(corrplot)
 corrplot(mcor)
 
@@ -1378,7 +1473,197 @@ col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA")
 #         cl.pos = "no", order = "AOE") # Error
 
 
+## 13.2 繪製函數曲線 =====
+
+
+## 13.3 在函數曲線下添加陰影 =====
+
+
+## 13.4 繪製網絡圖（igraph） =====
+
+# install.packages("igraph")
+library(igraph)
+gd <- graph(c(1,2, 2,3, 2,4, 1,4, 5,5, 3,6))
+plot(gd)
+gu <- graph(c(1,2, 2,3, 2,4, 1,4, 5,5, 3,6), directed = FALSE)
+plot(gu, vertex.label = NA)
+
+str(gd) # 圖的結構
+str(gu)
+
+set.seed(229)
+plot(gu)
+
+library(gcookbook)
+madmen2
+
+g <- graph.data.frame(madmen2, directed = TRUE)
+par(mar = c(0, 0, 0, 0))
+plot(g, layout = layout.fruchterman.reingold, vertex.size = 8, edge.arrow.size = .5, vertex.label = NA)
+# Fruchterman-Reingold佈局算法
+
+g <- graph.data.frame(madmen, directed = FALSE)
+par(mar = c(0, 0, 0, 0))
+plot(g, layout = layout.circle, vertex.size = 8, vertex.label = NA)
+# 無向圖
+
+
+## 13.5 在網絡圖中使用文本標籤 =====
+
+library(igraph)
+library(gcookbook)
+m <- madmen[1:nrow(madmen) %% 2 == 1, ] # 刪除偶數行
+g <- graph.data.frame(m, directed = FALSE)
+V(g)$name # 節點名稱
+plot(g, layout = layout.fruchterman.reingold, 
+     vertex.size = 4, # 縮小節點
+     vertex.label = V(g)$name, # 設置標籤
+     vertex.label.cex = .8, # 小號字體
+     vertex.label.dist = .4, # 節點和標籤位置錯開
+     vertex.label.color = "black")
+
+# 另一種參數設定方式
+V(g)$size <- 4
+V(g)$label <- V(g)$name
+V(g)$label.cex <- .8
+V(g)$label.dist <- .4
+V(g)$label.color <- "black"
+
+g$layout <- layout.fruchterman.reingold
+plot(g)
+
+
+E(g)
+E(g)[c(2, 11, 19)]$label <- "M" # 將線賦值
+E(g)$color <- "grey70"
+E(g)[c(2, 11, 19)]$color <- "red"
+plot(g)
+
+# ?igraph.plotting
+
+
+## 13.6 如何繪製熱圖 =====
+
+str(presidents)
+pres_rating <- data.frame(
+        rating = as.numeric(presidents),
+        year = as.numeric(floor(time(presidents))),
+        quarter = as.numeric(cycle(presidents))
+)
+pres_rating
+library(ggplot2)
+p <- ggplot(pres_rating, aes(x = year, y = quarter, fill = rating))
+p + geom_tile() # 遺失值會用灰色代替
+p + geom_raster() # 效率較高
+
+p + geom_tile() + 
+        scale_x_continuous(breaks = seq(1940, 1976, by = 4)) + 
+        scale_y_reverse() + 
+        scale_fill_gradient2(midpoint = 50, mid = "grey70", limits = c(0, 100)) # 調色
+
+
+## 13.7 繪製三維散佈圖 =====
+
+
+
+
+## 13.8 =====
+
+## 13.9
+
+## 13.10
+
+## 13.11
+
+## 13.12 繪製向量場 =====
+
+library(gcookbook)
+head(isabel)
+islice <- subset(isabel, z == min(z))
+ggplot(islice, aes(x = x, y = y)) + 
+        geom_segment(aes(xend = x + vx / 50, yend = y + vy / 50),
+                     size = 0.25)
+
+every_n <- function(x, by = 2){
+        x <- sort(x)
+        x[seq(1, length(x), by = by)]
+}
+keepx <- every_n(unique(isabel$x), by = 4)
+keepy <- every_n(unique(isabel$y), by = 4)
+islicesub <- subset(islice, x %in% keepx & y %in% keepy)
+library(grid)
+ggplot(islicesub, aes(x = x, y = y)) + 
+        geom_segment(aes(xend = x + vx / 50, yend = y + vy / 50),
+                     arrow = arrow(length = unit(0.1, "cm")), size = .25)
+
+# 未完
+
+
+## 13.13 繪製QQ圖 =====
+
+library(gcookbook)
+qqnorm(heightweight$heightIn)
+qqline(heightweight$heightIn)
+
+qqnorm(heightweight$ageYear)
+qqline(heightweight$ageYear)
+
+
+## 13.14 繪製經驗累積分佈函數圖 =====
+
+library(gcookbook)
+ggplot(heightweight, aes(x = heightIn)) + stat_ecdf()
+ggplot(heightweight, aes(x = ageYear)) + stat_ecdf()
+
+
+## 13.15 創建馬賽克圖 =====
+
+UCBAdmissions
+ftable(UCBAdmissions) # 平鋪後的列聯表
+
+dimnames(UCBAdmissions)
+
+install.packages("vcd")
+library(vcd)
+
+mosaic(~ Admit + Gender + Dept, data = UCBAdmissions) # 依序分割數據
+# 不同的分割順序會揭露不一樣的訊息
+
+mosaic(~ Dept + Gender + Admit, data = UCBAdmissions, 
+       highlighting = "Admit", highlighting_fill = c("lightblue", "pink"),
+       direction = c("v", "h", "v"))
+
+mosaic(~ Dept + Gender + Admit, data = UCBAdmissions, 
+       highlighting = "Admit", highlighting_fill = c("lightblue", "pink"), 
+       direction = c("v", "v", "h")) # 使用不同分割方向
+
+mosaic(~ Dept + Gender + Admit, data = UCBAdmissions, 
+       highlighting = "Admit", highlighting_fill = c("lightblue", "pink"), 
+       direction = c("v", "h", "h"))
+
+# 此為辛普森悖論的案例
+
+## 13.16 繪製餅圖 =====
+
+library(MASS)
+fold <- table(survey$Fold)
+fold
+pie(c(99, 18, 120), labels = c("L on R", "Neither", "R on L"))
+
+# 圓餅圖非常容易被批判，不如考慮使用長條圖，但圓餅圖的優勢是人人都能判讀
+
+
+## 13.17 創建地圖 =====
+
+## 13.18 繪製等值區域圖 ===== 
+
+## 13.19 創建空白背景的地圖 =====
+
+## 13.20 基於空間數據格式（shapefile）創建地圖 =====
+
+
 # 14. 輸出圖形 =====
+
 
 # 15. reshape =====
 
