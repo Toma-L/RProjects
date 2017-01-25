@@ -262,9 +262,7 @@ ggplot(ce, aes(x = Date, y = Weight, fill = Cultivar)) +
 
 ## 3.10 Cleveland點圖 =====
 
-# Check the name!!!
 library(gcookbook)
-
 tophit <- tophitters2001[1:25, ]
 ggplot(tophit, aes(x = avg, y = name)) + geom_point()
 
@@ -1192,7 +1190,7 @@ ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + scale_y_rever
 # ylim()與scale_y_reverse()同樣不能配合，要設定在參數
 
 
-## 8,4 修改類別型座標軸上項目的順序 =====
+## 8.4 修改類別型座標軸上項目的順序 =====
 
 p <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
 p + scale_x_discrete(limits = c("trt1", "ctrl", "trt2"))
@@ -1449,11 +1447,397 @@ p %+% mdnew + coord_polar() + ylim(0, max(md$deaths)) # %+% 新資料 ---> 畫�
 
 # 9. 整體外觀 =====
 
+## 9.1 設置圖形標題 =====
+
+library(gcookbook)
+library(ggplot2)
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
+p + ggtitle("Age and Height of Schoolchildren")
+p + ggtitle("Age and Height\nof Schoolchildren")
+p + labs(title = "Age and Height\nof Schoolchildren") # ggtitle("") 與 labs(title = "") 等價
+
+p + ggtitle("Age and Height of Schoolchildren") + 
+        theme(plot.title = element_text(vjust = -2.5)) # 似乎無效
+p + annotate("text", x = mean(range(heightweight$ageYear)), y = Inf,
+             label = "Age and Height of Schoolchildren", vjust = 1.5, size = 6)
+
+
+## 9.2 修改文本外觀 =====
+
+library(gcookbook)
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
+p + theme(axis.title.x = element_text(size = 16, 
+                                      lineheight = .9, 
+                                      family = "Times", 
+                                      face = "bold.italic", 
+                                      colour = "red"))
+p + ggtitle("Age and Height\nof Schoolchildren") + 
+        theme(plot.title = element_text(size = rel(1.5), lineheight = .9, family = "Times", 
+                                        face = "bold.italic", colour = "red")) # 針對主題元素
+
+p + annotate("text", x = 15, y = 53, label = "Some text", size = 7, family = "Times", fontface = "bold.italic", colour = "red")
+p + geom_text(aes(label = weightLb), size = 4, family = "Times", colour = "red") # 針對文本幾何對象
+
+
+## 9.3 使用主題 =====
+
+library(gcookbook)
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
+p + theme_grey() # default
+p + theme_grey(base_size = 16, base_family = "Times") # 設定主題的基本字體和大小
+theme_set(theme_bw()) # 設定default主題
+p
+theme_set(theme_grey()) # 設定重回theme_grey()
+
+
+## 9.4 修改主題元素的外觀 =====
+
+library(gcookbook)
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point()
+
+p + theme(
+        panel.grid.major = element_line(colour = "red"),
+        panel.grid.minor = element_line(colour = "red", linetype = "dashed", size = .2),
+        panel.background = element_rect(fill = "lightblue"),
+        panel.border = element_rect(colour = "blue", fill = NA, size = 2))
+
+p + ggtitle("Plot title here") + 
+        theme(
+                axis.title.x = element_text(colour = "red", size = 14), # 軸標題
+                axis.text.x = element_text(colour = "blue"), # 刻度
+                axis.title.y = element_text(colour = "red", size = 14, angle = 90),
+                axis.text.y = element_text(colour = "blue"),
+                plot.title = element_text(colour = "red", size = 20, face = "bold"))
+
+p + theme(
+        legend.background = element_rect(fill = "grey85", colour = "red", size = 1),
+        legend.title = element_text(colour = "blue", face = "bold", size = 14),
+        legend.text = element_text(colour = "red"),
+        legend.key = element_rect(colour = "blue", size = .25)
+)
+
+p + facet_grid(sex ~ .) + theme(
+        strip.background = element_rect(fill = "pink"),
+        strip.text.y = element_text(size = 14, angle = -90, face = "bold")
+)
+
+# 想套用現成的主題但又想要微調，微調的部分必須加在theme_bw()之後！
+p + theme(axis.title.x = element_text(colour = "red")) + theme_bw() # 否則會被還原
+p + theme_bw() + theme(axis.title.x = element_text(colour = "red", size = 12))
+
+
+## 9.5 創建自定義主題 =====
+
+library(gcookbook)
+mytheme <- theme_bw() + 
+        theme(text = element_text(colour = "red"), 
+              axis.title = element_text(size = rel(1.25)))
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
+p + mytheme
+
+
+## 9.6 隱藏網格線 =====
+
+library(gcookbook)
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
+
+p + theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())
+
+p + theme(panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank())
+
+p + theme(panel.grid.major.y = element_blank(),
+          panel.grid.minor.y = element_blank())
+
+
 # 10. 圖例 =====
+
+## 10.1 移除圖例 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
+p
+p + guides(fill = FALSE) # 移除圖例
+p + scale_fill_discrete(guide = FALSE) # 移除標註fill的圖例 # 另外還有scale_colour_discrete(), scale_shape_discrete()
+p + theme(legend.position = "none") # 移除「所有」圖例
+
+
+## 10.2 修改圖例的位置 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot() + 
+        scale_fill_brewer(palette = "Pastel2")
+p + theme(legend.position = "top")
+
+p + theme(legend.position = c(1, 0), legend.justification = c(1, 0)) # 右下角
+p + theme(legend.position = c(1, 1), legend.justification = c(1, 1)) # 右上角
+
+p + theme(legend.position = c(.85, .2)) + 
+        theme(legend.background = element_rect(fill = "white", colour = "black")) # 白底黑邊
+
+p + theme(legend.position = c(.85, .2)) + 
+        theme(legend.background = element_blank()) +  # 移除圖例背景
+        theme(legend.key = element_blank()) # 移除圖例邊筐
+
+
+## 10.3 修改圖例項目的順序 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
+p
+
+p + scale_fill_discrete(limits = c("trt1", "trt2", "ctrl")) # 只能修改圖例的順序
+
+p + scale_x_discrete(limits = c("trt1", "trt2", "ctrl")) + 
+        scale_fill_discrete(limits = c("trt1", "trt2", "ctrl")) # 要改x軸順序要用scale_x_discrete()
+
+p + scale_fill_grey(start = .5, end = 1, limits = c("trt1", "trt2", "ctrl")) # 用不同標度scale_fill_xxx()
+p + scale_fill_brewer(palette = "Pastel2", limits = c("trt1", "trt2", "ctrl"))
+
+
+## 10.4 反轉圖例項目的順序 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
+p
+p + guides(fill = guide_legend(reverse = TRUE)) # x軸順序沒變
+
+p + scale_fill_hue(guide_legend(reverse = TRUE)) # default情況下，scale_fill_discrete()和scale_fill_hue()等價
+
+
+## 10.5 修改圖例標題 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
+p
+p + labs(fill = "Condition")
+library(gcookbook)
+hw <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + 
+        geom_point(aes(size = weightLb)) + scale_size_continuous(range = c(1, 4))
+hw
+hw + labs(colour = "Male/Female", size = "Weight\n(pounds)")
+
+hw1 <- ggplot(heightweight, aes(x = ageYear, y = heightIn, shape = sex, colour = sex)) + geom_point()
+hw1 + labs(shape = "Male/Female")
+hw1 + labs(shape = "Male/Female", colour = "Male/Female") # sex同時映射到shape和colour，因此只有一個圖例
+
+
+## 10.6 修改圖例標題的外觀 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
+p + theme(legend.title = element_text(face = "italic", family = "Times", colour = "red", size = 14))
+p + guides(fill = guide_legend(title.theme = element_text(face = "italic", family = "times", colour = "red", size = 14)))
+# 麻煩又囉唆的方法2
+
+
+## 10.7 移除圖例標題 =====
+
+ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot() + 
+        guides(fill = guide_legend(title = NULL))
+# scale_fill_hue(guide = guide_legend(title = NULL))
+
+
+## 10.8 修改圖例標籤 =====
+
+library(gcookbook)
+p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
+p + scale_fill_discrete(labels = c("Control", "Treatment 1", "Treatment 2")) # x軸必須透過scale_x_discrete()來改變
+
+p + scale_fill_grey(start = .5, end = 1, labels = c("Control", "Treatment 1", "Treatment 2"))
+
+p + scale_fill_discrete(limits = c("trt1", "trt2", "ctrl"),
+                        labels = c("Treatment 1", "Treatment 2", "Control"))
+
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn, shape = sex, colour = sex)) + 
+        geom_point()
+p
+p + scale_shape_discrete(labels = c("Female", "Male")) # 一個變量映射兩個圖形屬性，要同時修改兩種屬性的標籤
+
+p + scale_shape_discrete(labels = c("Female", "Male")) + 
+        scale_colour_discrete(labels = c("Female", "Male"))
+
+
+## 10.9 修改圖例標籤的外觀 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
+p + theme(legend.text = element_text(face = "italic", family = "Times", colour = "red", size = 14))
+
+p + guides(fill = guide_legend(label.theme = element_text(face = "italic", family = "Times", colour = "red", size = 14)))
+# somehow, it doesn't work!
+
+
+## 10.10 使用含多行文本的標籤 =====
+
+p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
+
+p + scale_fill_discrete(labels = c("Control", "Type 1\ntreatment", "Type 2\ntreatment"))
+
+library(grid) # 使用unit()增加圖例說明的高度
+p + scale_fill_discrete(labels = c("Control", "Type 1\ntreatment", "Type 2\ntreatment")) + 
+        theme(legend.text = element_text(lineheight = .8), 
+              legend.key.height = unit(1, "cm"))
+
 
 # 11. 分面 =====
 
+## 11.1 使用分面將數據分割繪製到子圖中 =====
+
+p <- ggplot(mpg, aes(x = displ, y = hwy)) + geom_point()
+p + facet_grid(drv ~ .) # 縱向
+p + facet_grid(. ~ cyl) # 橫向
+p + facet_grid(drv ~ cyl) # 同時
+
+p + facet_wrap(~ class) # 依次橫向排列並換行
+p + facet_wrap(~ class, nrow = 2)
+p + facet_wrap(~ class, ncol = 4)
+
+
+## 11.2 在不同座標軸下使用分面 =====
+
+p <- ggplot(mpg, aes(x = displ, y = hwy)) + geom_point()
+p + facet_grid(drv ~ cyl, scale = "free_y") # y軸刻度範圍各自不同
+p + facet_grid(drv ~ cyl, scales = "free") # 兩軸都自由
+
+
+## 11.3 修改分面的文本標籤 =====
+
+mpg2 <- mpg
+mpg2$drv <- factor(mpg2$drv)
+levels(mpg2$drv)[levels(mpg2$drv) == "4"] <- "4wd"
+levels(mpg2$drv)[levels(mpg2$drv) == "f"] <- "Front"
+levels(mpg2$drv)[levels(mpg2$drv) == "r"] <- "Rear"
+ggplot(mpg2, aes(x = displ, y = hwy)) + geom_point() + facet_grid(drv ~ .)
+
+
+ggplot(mpg2, aes(x = displ, y = hwy)) + geom_point() + 
+        facet_grid(drv ~ ., labeller = label_both) # facet_wrap()無法
+
+
+mpg3 <- mpg
+mpg3$drv <- factor(mpg3$drv)
+levels(mpg3$drv)[levels(mpg3$drv) == "4"] <- "4^{wd}"
+levels(mpg3$drv)[levels(mpg3$drv) == "f"] <- "- Front %.% e^{pi * i}"
+levels(mpg3$drv)[levels(mpg3$drv) == "r"] <- "4^{wd} - Front"
+ggplot(mpg3, aes(x = displ, y = hwy)) + geom_point() + 
+        facet_grid(drv ~ ., labeller = label_parsed) # 輸入字符串當貼標
+
+
+## 11.4 修改分面標籤和標題的外觀 =====
+
+library(gcookbook)
+ggplot(cabbage_exp, aes(x = Cultivar, y = Weight)) + geom_bar(stat = "identity") +
+        facet_grid(. ~ Date) +
+        theme(strip.text = element_text(face = "bold", size = rel(1.5)), 
+              strip.background = element_rect(fill = "lightblue", colour = "black", size = 1))
+
+
 # 12. 配色 =====
+
+## 12.1 設置對象的顏色 =====
+
+ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point(colour = "red")
+library(MASS)
+ggplot(birthwt, aes(x = bwt)) + geom_histogram(fill = "red", colour = "black")
+
+
+## 12.2 將變量映射到顏色上 =====
+
+library(gcookbook)
+ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
+        geom_bar(colour = "black", position = "dodge", stat = "identity")
+
+ggplot(cabbage_exp, aes(x = Date, y = Weight)) + 
+        geom_bar(aes(fill = Cultivar), colour = "black", position = "dodge", stat = "identity") # 等價做法
+
+ggplot(mtcars, aes(x = wt, y = mpg, colour = cyl)) + geom_point()
+ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point(aes(colour = cyl)) # 等價
+str(cabbage_exp)
+
+ggplot(mtcars, aes(x = wt, y = mpg, colour = factor(cyl))) + geom_point()
+
+m <- mtcars
+m$cyl <- factor(m$cyl)
+ggplot(m, aes(x = wt, y = mpg, colour = cyl)) + geom_point()
+
+
+## 12.3 對離散型變量使用不同的調色板 =====
+
+library(gcookbook)
+p <- ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) + geom_area()
+p
+p + scale_fill_discrete()
+p + scale_fill_hue()
+p + scale_fill_brewer()
+
+h <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + 
+        geom_point()
+h
+h + scale_colour_hue(l = 45) # 亮度default為65(0 ~ 100)，調整l可改亮度
+
+library(RColorBrewer)
+display.brewer.all()
+
+p + scale_fill_brewer(palette = "Oranges")
+p + scale_fill_grey()
+p + scale_fill_grey(start = .7, end = 0)
+
+
+## 12.4 對離散型變量使用自定義調色板 =====
+
+library(gcookbook)
+h <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point()
+h + scale_colour_manual(values = c("red", "blue"))
+h + scale_colour_manual(values = c("#CC6666", "#7777DD"))
+
+levels(heightweight$sex)
+h + scale_colour_manual(values = c(m = "blue", f = "red"))
+
+
+## 12.5 使用色盲友好式的調色板 =====
+
+library(gcookbook)
+p <- ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) + geom_area()
+cb_palette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", 
+                "#0072B2", "#D55E00", "#CC79A7")
+p + scale_fill_manual(values = cb_palette)
+
+
+## 12.6 對連續型變量使用自定義調色板 =====
+
+library(gcookbook)
+p <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = weightLb)) + 
+        geom_point(size = 3)
+p
+
+p + scale_colour_gradient(low = "black", high = "white")
+
+library(scales)
+p + scale_colour_gradient2(low = muted("red"), mid = "white", high = muted("blue"), midpoint = 110)
+
+p + scale_colour_gradientn(colours = c("darkred", "orange", "yellow", "white"))
+
+
+## 12.7 根據數值設定陰影顏色 =====
+
+library(gcookbook)
+cb <- subset(climate, Source == "Berkeley")
+cb$valence[cb$Anomaly10y >= 0] <- "pos"
+cb$valence[cb$Anomaly10y < 0] <- "neg"
+cb
+
+ggplot(cb, aes(x = Year, y = Anomaly10y)) + 
+        geom_area(aes(fill = valence)) +
+        geom_line() + 
+        geom_hline(yintercept = 0)
+
+interp <- approx(cb$Year, cb$Anomaly10y, n = 1000) # 改善0附近的凌亂陰影
+
+cbi <- data.frame(Year = interp$x, Anomaly10y = interp$y)
+cbi$valence[cbi$Anomaly10y >= 0] <- "pos"
+cbi$valence[cbi$Anomaly10y < 0] <- "neg"
+ggplot(cbi, aes(x = Year, y = Anomaly10y)) + 
+        geom_area(aes(fill = valence), alpha = .4) + 
+        geom_line() + 
+        geom_hline(yintercept = 0) + 
+        scale_fill_manual(values = c("#CCEEFF", "#FFDDDD"), guide = FALSE) + 
+        scale_x_continuous(expand = c(0, 0))
+
 
 # 13. 其他圖形 =====
 
@@ -1564,7 +1948,19 @@ p + geom_tile() +
 
 ## 13.7 繪製三維散佈圖 =====
 
+# install.packages("rgl")
+library(rgl)
+plot3d(mtcars$wt, mtcars$disp, mtcars$mpg, type = "s", size = .75, lit = FALSE)
 
+interleave <- function(v1, v2) as.vector(rbind(v1, v2))
+plot3d(mtcars$wt, mtcars$disp, mtcars$mpg, 
+       xlab = "Weight", ylab = "Displacement", zlab = "MPG",
+       size = .75, type = "s", lit = FALSE)
+
+segments3d(interleave(mtcars$wt, mtcars$wt),
+           interleave(mtcars$disp, mtcars$disp),
+           interleave(mtcars$mpg, min(mtcars$mpg)),
+           alpha = .4, col = "blue")
 
 
 ## 13.8 =====
@@ -1623,7 +2019,7 @@ ftable(UCBAdmissions) # 平鋪後的列聯表
 
 dimnames(UCBAdmissions)
 
-install.packages("vcd")
+# install.packages("vcd")
 library(vcd)
 
 mosaic(~ Admit + Gender + Dept, data = UCBAdmissions) # 依序分割數據
@@ -1655,6 +2051,26 @@ pie(c(99, 18, 120), labels = c("L on R", "Neither", "R on L"))
 
 ## 13.17 創建地圖 =====
 
+world_map <- map_data("world")
+world_map
+sort(unique(world_map$region)) # 看有沒有單獨地圖資料
+
+euro <- map_data("world", region = c("UK", "France", "Netherlands", "Belgium"))
+ggplot(euro, aes(x = long, y = lat, group = group, fill = region)) + 
+        geom_polygon(colour = "black") + 
+        scale_fill_brewer(palette = "Set2") + 
+        scale_y_continuous(limits = c(40, 60)) + 
+        scale_x_continuous(limits = c(-25, 25))
+
+nz1 <- map_data("world", region = "New Zealand")
+nz1 <- subset(nz1, long > 0, lat > -48)
+ggplot(nz1, aes(x = long, y = lat, group = group)) + geom_path()
+
+
+map()
+?mappproject
+
+
 ## 13.18 繪製等值區域圖 ===== 
 
 ## 13.19 創建空白背景的地圖 =====
@@ -1663,6 +2079,21 @@ pie(c(99, 18, 120), labels = c("L on R", "Neither", "R on L"))
 
 
 # 14. 輸出圖形 =====
+
+## 14.1 輸出為PDF向量文件 =====
+
+## 14.2 輸出為SVG向量文件 =====
+
+## 14.3 輸出為WMF向量文件 ====
+
+## 14.4 編輯向量格式的輸出文件 =====
+
+## 14.5 輸出為點陣(PNG/TIFF)文件 =====
+
+## 14.6 在PDF文件中使用字體 =====
+
+## 14.7 在Windows的點陣貨螢幕輸出中使用字體 =====
+
 
 
 # 15. reshape =====
