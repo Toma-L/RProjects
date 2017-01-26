@@ -1859,6 +1859,9 @@ col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA")
 
 ## 13.2 繪製函數曲線 =====
 
+p <- ggplot(data.frame(x = c(-3, 3)), aes(x = x))
+
+
 
 ## 13.3 在函數曲線下添加陰影 =====
 
@@ -2082,18 +2085,103 @@ map()
 
 ## 14.1 輸出為PDF向量文件 =====
 
+pdf("myplot.pdf", width = 4, height = 4)
+plot(mtcars$wt, mtcars$mpg)
+print(ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point())
+dev.off()
+
+pdf("myplot.pdf", width = 8/2.54, height = 8/2.54)
+
+
+ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point()
+ggsave("myplot.pdf", width = 8, height = 8, units = "cm") # ggsave()簡單保存ggplot最後畫的一張圖
+# ggsave()無法用於創建多頁圖形
+
+
 ## 14.2 輸出為SVG向量文件 =====
 
-## 14.3 輸出為WMF向量文件 ====
+svg("myplot.svg", width = 4, height = 4)
+plot(mtcars$wt, mtcars$mpg)
+dev.off()
+
+
+## 14.3 輸出為WMF向量文件 =====
+
+win.metafile("myplot.wmf", width = 4, height = 4)
+plot(mtcars$wt, mtcars$mpg)
+dev.off()
+
+ggsave("myplot.wmf", width = 8, height = 8, units = "cm")
+
 
 ## 14.4 編輯向量格式的輸出文件 =====
 
+pdf("myplot.pdf", width = 4, height = 4, useDingbats = FALSE)
+ggsave("myplot.pdf", width = 4, height = 4, useDingbats = FALSE)
+# 避免圖形被其他軟體辨識為字符而無法顯示的問題
+
+
 ## 14.5 輸出為點陣(PNG/TIFF)文件 =====
+
+png("myplot.png", width = 400, height = 400)
+plot(mtcars$wt, mtcars$mpg)
+dev.off()
+
+png("myplot-%d.png", width = 400, height = 400) # 輸出多幅圖形，加入%d
+# width, height此處為像素
+plot(mtcars$wt, mtcars$mpg)
+print(ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point())
+dev.off()
+
+ppi <- 300
+png("myplot.png", width = 4 * ppi, height = 4 * ppi, res = ppi)
+plot(mtcars$wt, mtcars$mpg)
+dev.off()
+
+ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point()
+ggsave("myplot.png", width = 8, height = 8, unit = "cm", dpi = 300)
+
+# install.packages("Cairo")
+# CairoPNG("myplot.png")
+# plot(mtcars$wt, mtcars$mpg)
+# dev.off()
+
 
 ## 14.6 在PDF文件中使用字體 =====
 
+install.packages("extrafont") # 可以用於創建包含其它字體的pdf文件
+library(extrafont)
+font_import()
+fonts()
+
+library(extrafont)
+loadfonts()
+
+# Sys.seteny(R_GSCMD = "C:/Program Files/gs/gs9.05/bin/gswin32c.exe")
+
+library(ggplot2)
+ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point() + 
+        ggtitle("Title text goes here") + 
+        theme(text = element_text(size = 16, family = "Impact"))
+ggsave("myplot.pdf", width = 4, height = 4)
+embed_fonts("myplot.pdf")
+
+
 ## 14.7 在Windows的點陣貨螢幕輸出中使用字體 =====
 
+# install.packages("extrafont")
+library(extrafont)
+font_import()
+fonts()
+
+library(extrafont)
+loadfonts("win")
+
+library(ggplot2)
+ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point() + 
+        ggtitle("Title text goes here") + 
+        theme(text = element_text(size = 16, family = "Georgia", face = "italic"))
+ggsave("myplot.png", width = 4, height = 4, dpi = 300)
 
 
 # 15. reshape =====
