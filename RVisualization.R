@@ -1860,10 +1860,39 @@ col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA")
 ## 13.2 繪製函數曲線 =====
 
 p <- ggplot(data.frame(x = c(-3, 3)), aes(x = x))
+p + stat_function(fun = dnorm)
 
+p + stat_function(fun = dt, args = list(df = 2))
+myfun <- function(xvar) {
+        1 / (1 + exp(-xvar + 10))
+}
+ggplot(data.frame(x = c(0, 20)), aes(x = x)) + stat_function(fun = myfun) # default會畫出x範圍內的101個點
 
 
 ## 13.3 在函數曲線下添加陰影 =====
+
+dnorm_limit <- function(x) {
+        y <- dnorm(x)
+        y[x < 0 | x > 2] <- NA # 超出範圍變NA
+        return(y)
+}
+p <- ggplot(data.frame(x = c(-3, 3)), aes(x = x))
+p + stat_function(fun = dnorm_limit, geom = "area", fill = "blue", alpha = .2) + 
+        stat_function(fun = dnorm)
+
+# 這是一個「製造函數的函數」！
+limitRange <- function(fun, min, max) {
+        function(x) { 
+                y <- fun(x)
+                y[x < min | x > max] <- NA
+                return(y)
+                }
+}
+dlimit <- limitRange(dnorm, 0, 2)
+dlimit(-2:4)
+
+p + stat_function(fun = dnorm) + 
+        stat_function(fun = limitRange(dnorm, 0, 2), geom = "area", fill = "#2E4A71", alpha = .2, n = 200)
 
 
 ## 13.4 繪製網絡圖（igraph） =====
@@ -1965,14 +1994,112 @@ segments3d(interleave(mtcars$wt, mtcars$wt),
            interleave(mtcars$mpg, min(mtcars$mpg)),
            alpha = .4, col = "blue")
 
+plot3d(mtcars$wt, mtcars$disp, mtcars$mpg,
+       xlab = "", ylab = "", zlab = "",
+       axes = FALSE,
+       size = .75, type = "s", lit = FALSE)
 
-## 13.8 =====
+segments3d(interleave(mtcars$wt, mtcars$wt),
+           interleave(mtcars$disp, mtcars$disp),
+           interleave(mtcars$mpg, min(mtcars$mpg)),
+           alpha = .4, col = "blue")
 
-## 13.9
+rgl.bbox(color = "grey50",
+         emission = "grey50",
+         xlen = 0, ylen = 0, zlen = 0)
+rgl.material(color = "black")
+axes3d(edges = c("x--", "y+-", "z--"),
+       ntick = 6, cex = .75)
+mtext3d("Weight", edg = "x--", line = 2)
+mtext3d("Displacement", edge = "y+-", line = 3)
+mtext3d("MPG", edge = "z--", line = 3)
+
+
+## 13.8 在三維圖上添加預測曲面 =====
+
+# 這一段都不work，重做！！！
+predictgrid <- function(model, xvar, yvar, zvar, res = 16, type = NULL){
+        xrnage <- range(model$model[[xvar]])
+        yrange <- range(model$model[[yvar]])
+        newdata <- expand.grid(x = seq(xrange[1], xrange[2], length.out = res),
+                               y = seq(yrange[1], yrange[2], length.out = res))
+        names(newdata) <- c(xvar, yvar)
+        newdata[[zvar]] <- predict(model, newdata = newdata, type = type)
+        newdata
+}
+df2mat <- function(p, xvar = NULL, yvar = NULL, zvar = NULL){
+        if(is.null(xvar)) xvar <- names(p)[1]
+        if(is.null(yvar)) yvar <- names(p)[2]
+        if(is.null(zvar)) zvar <- names(p)[3]
+        x <- unique(p[[xvar]])
+        y <- unique(p[[yvar]])
+        z <- matrix(p[[zvar]], nrow = length(y), ncol = length(x))
+        m <- list(x, y, z)
+        names(m) <- c(xvar, yvar, zvar)
+        m
+}
+interleave <- function(v1, v2) as.vector(rbind(v1, v2))
+library(rgl)
+m <- mtcars
+mod <- lm(mpg ~ wt + disp + wt:disp, data = m)
+m$pred_mpg <- predict(mod)
+mpgrid_df <- predictgrid(mod, "wt", "disp", "mpg")
+mpgrid_list <- df2mat(mpgrid_df)
+plot3d(m$wt, m$disp, m$mpg, type = "s", size = .5, lit = FALSE)
+spheres3d(m$wt, m$disp, m$pred_mpg, alpha = .4, type = "s", size = .5, lit = FALSE)
+segments3d(interleave(m$wt, m$wt),
+           interleave(m$disp, m$disp),
+           interleave(m$mpg, m$pred_mpg),
+           alpha = .4, col = "red")
+surface3d(mpgrid_list$wt, mpgrid_list$disp, mpgrid_list$mpg,
+          alpha = .4, front = "lines", back = "lines")
+
+# 修改圖形外觀
+plot3d(mtcars$wt, mtcars$disp, mtcars$mpg,
+       xlab = "", ylab = "", zlab = "",
+       axes = FALSE, size = .5, type = "s", lit = FALSE)
+spheres3d(m$wt, m$disp, m$pred_mpg, alpha = .4, type = "s", size = .5, lit = FALSE)
+segments3d(interleave(m$wt, m$wt),
+           interleave(m$disp, m$disp),
+           interleave(m$mpg, m$pred_mpg),
+           alpha = .4, col = "red")
+surface3d(mpgrid_list$wt, mpgrid_list$disp, mpgrid_list$mpg, 
+          alpha = .4, front = "lines", back = "lines")
+rgl.bbox(color = "grey50",
+         emission = "grey50",
+         xlen = 0, ylen = 0, zlen = 0)
+rgl.material(color = "black")
+axes3d(edges = c("x--", "y+-", "z--"),
+       ntick = 6,
+       cex = .75)
+mtext3d("Weight", edge = "x--", line = 2)
+mtext3d("Displacement", edge = "y+-", line = 3)
+mtext3d("MPG", edge = "z--", line = 3)
+
+
+## 13.9 
 
 ## 13.10
 
-## 13.11
+## 13.11 繪製譜系圖(Dendrogram) =====
+
+library(gcookbook)
+c2 <- subset(countries, Year == 2009)
+c2 <- c2[complete.cases(c2), ]
+set.seed(201)
+c2 <- c2[sample(1:nrow(c2), 25), ]
+c2
+rownames(c2) <- c2$Name
+c2 <- c2[, 4:7]
+c2
+c3 <- scale(c2) # 做標準化，因為GDP資料值比infmortality大非常多，不標準化會使某些變數佔主導地位
+c3
+hc <- hclust(dist(c3))
+plot(hc)
+plot(hc, hang = -1)
+
+# ?hclust
+
 
 ## 13.12 繪製向量場 =====
 
@@ -2074,11 +2201,87 @@ map()
 ?mappproject
 
 
-## 13.18 繪製等值區域圖 ===== 
+## 13.18 繪製等值區域圖(Choropleth Map) ===== 
+
+crimes <- data.frame(state = tolower(rownames(USArrests)), USArrests)
+crimes
+library(maps)
+states_map <- map_data("state")
+crime_map <- merge(states_map, crimes, by.x = "region", by.y = "state")
+head(crime_map)
+library(plyr)
+crime_map <- arrange(crime_map, group, order)
+head(crime_map)
+ggplot(crime_map, aes(x = long, y = lat, group = group, fill = Assault)) + 
+        geom_polygon(colour = "black") + 
+        coord_map("polyconic")
+
+ggplot(crimes, aes(map_id = state, fill = Assault)) + 
+        geom_map(map = states_map, colour = "black") + 
+        scale_fill_gradient2(low = "#559999", mid = "grey90", high = "#BB650B", 
+                             midpoint = median(crimes$Assault)) + 
+        expand_limits(x = states_map$long, y = states_map$lat) + 
+        coord_map("polyconic")
+qa <- quantile(crimes$Assault, c(0, .2, .4, .6, .8, 1.0))
+qa
+
+crimes$Assault_q <- cut(crimes$Assault, qa, labels = c("0-20%", "20-40%", "40-60%", "60-80%", "80-100%"),
+                        include.lowest = TRUE)
+crimes
+pal <- colorRampPalette(c("#559999", "grey80", "#BB650B"))(5)
+pal
+ggplot(crimes, aes(map_id = state, fill = Assault_q)) + 
+        geom_map(map = states_map, colour = "black") + 
+        expand_limits(x = states_map$long, y = states_map$lat) + 
+        coord_map("polyconic") + 
+        labs(fill = "Assault Rate\nPercentile")
+
+ggplot(crimes, aes(map_id = state, fill = Assault)) + 
+        geom_map(map = states_map) + 
+        expand_limits(x = states_map$long, y = states_map$lat) + 
+        coord_map("polyconic")
+
 
 ## 13.19 創建空白背景的地圖 =====
 
+theme_clean <- function(base_size = 12) {
+        require(grid)
+        theme_grey(base_size) %+replace%
+                theme(
+                        axis.title = element_blank(),
+                        axis.text = element_blank(),
+                        panel.background = element_blank(),
+                        panel.grid = element_blank(),
+                        axis.ticks.length = unit(0, "cm"),
+                        axis.ticks.margin = unit(0, "cm"),
+                        panel.margin = unit(0, "lines"),
+                        plot.margin = unit(c(0, 0, 0, 0), "lines"),
+                        complete = TRUE
+                )
+}
+
+ggplot(crimes, aes(map_id = state, fill = Assault_q)) + 
+        geom_map(map = states_map, colour = "black") + 
+        scale_fill_manual(values = pal) + 
+        expand_limits(x = states_map$long, y = states_map$lat) + 
+        coord_map("polyconic") + 
+        labs(fill = "Assault Rate\nPercentile") + 
+        theme_clean()
+
+
 ## 13.20 基於空間數據格式（shapefile）創建地圖 =====
+
+# 這一段都不work！
+
+# install.packages("maptools")
+library(maptools)
+uk_shp <- readShapePoly("GBR_adm/GBR_adm2.shp")
+uk_map <- fortify(uk_shp)
+ggplot(uk_ap, aes(x = long, y = lat, group = group)) + geom_path()
+
+str(uk_shp)
+uk_map
+ggplot(uk_shp, aes(x = long, y = lat, group = group)) + geom_path()
 
 
 # 14. 輸出圖形 =====
@@ -2206,3 +2409,386 @@ dat <- as.data.frame(lst)
 
 
 # 15.2 提取資料
+
+
+# 實用R程式設計 ==================================================
+# R繪圖 ==================================================
+# 探索資料圖形 ==================================================
+
+data(iris)
+str(iris)
+summary(iris)
+head(iris, 5)
+tail(iris, 5)
+iris[iris$Species == "setosa", 1]
+subset(iris, Species == "setosa", select = Sepal.Length)
+iris[iris$Species == "setosa", 1:2]
+subset(iris, Species == "setosa", select = c(Sepal.Length, Sepal.Width))
+
+x <- iris[, 1]
+c(min(x), max(x))
+range(x)
+summary(x)
+fivenum(x)
+mean(x)
+median(x)
+IQR(x)
+mean(x, trim = .1)
+
+sd(x)
+cv <- sd(x) / mean(x)
+
+old.par <- par(mfrow = c(1, 2), mex = .5, mar = c(4, 4, 3, 2) + .1)
+boxplot(x)
+rug(x, side = 4)
+boxplot(x, horizontal = TRUE)
+rug(x, side = 1)
+par(old.par)
+
+old.par <- par(mfrow = c(1, 2), mex = .8, mar = c(5, 5, 3, 1) + .1)
+hist(x, freq = TRUE, breaks = "Sturges")
+rug(x, side = 1)
+hist(x, prob = TRUE, breaks = "Sturges", col = "lightblue", border = "magenta")
+rug(x, side = 1)
+par(old.par)
+
+hist(x, prob = TRUE, breaks = "Sturges")
+hist(x, prob = TRUE, breaks = "Scott")
+hist(x, prob = TRUE, breaks = "Freedman-Diaconis")
+
+hist(x, prob = TRUE, breaks = 10)
+hist(x, prbo = TRUE, breaks = seq(from = 4, to = 8, by = .25))
+
+library(MASS)
+old.par <- par(mfrow = c(1, 2), mex = .8, mar = c(5, 5, 3, 1) + .1)
+truehist(x, prob = FALSE, ylab = "Frequency", main = "Histogram")
+truehist(x, prob = TRUE, ylab = "Density", main = "Histogram")
+par(old.par)
+
+stem(x, scale = .5)
+sum(x == 4.4)
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+stripchart(x, method = "overplot", at = .7)
+text(6, .65, "overplot")
+stripchart(x, method = "stack", add = TRUE, at = .85)
+text(6, .8, "stack")
+stripchart(x, method = "jitter", add = TRUE, at = 1.2)
+text(6, 1.05, "jitter")
+title(main = "strip chart")
+par(old.par)
+
+y <- cut(x, breaks = 6)
+z <- table(y)
+old.par <- par(mfrow = c(2, 2), mex = .2, mar = c(3, 3, 3, 2) + .1)
+pie(z)
+pie(z, clockwise = TRUE)
+pie(z, col = terrain.colors(6))
+pie(z, col = gray(seq(from = .4, to = 1.0, length = 6)))
+par(old.par)
+
+old.par <- par(mfrow = c(1, 2), mex = .8, mar = c(5, 4, 3, 1) + .1)
+plot(density(x), col = "red", main = "Kernel density estimate")
+rug(x, side = 1)
+hist(x, prob = TRUE, breaks = "Sturges", main = "Histogram and KDE")
+lines(density(x), col = "red")
+rug(x, side = 1)
+par(old.par)
+
+f <- density(x)
+class(f)
+names(f)
+print(f)
+plot(f, type = "n")
+polygon(f, col = "wheat")
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+plot.ecdf(x) # 累積機率密度圖(emperical cumulative density function)
+par(old.par)
+
+F <- ecdf(x)
+class(F)
+names(F)
+print(F)
+summary(F)
+plot(F)
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+qqnorm(x)
+qqline(x, col = "red", lwd = 2)
+par(old.par)
+
+data(VADeaths)
+str(VADeaths)
+class(VADeaths)
+VADeaths
+names <- c("RM", "RF", "UM", "UF")
+colors <- c("lightblue", "mistyrose", "lightcyan", "lavender", "cornsilk")
+old.par <- par(mfrow = c(2, 2), mex = .8, mar = c(3, 3, 3, 2) + .1)
+barplot(VADeaths, names.arg = names)
+barplot(VADeaths, names.arg = names, horiz = TRUE)
+barplot(VADeaths, names.arg = names, col = colors, border = "blue")
+barplot(VADeaths, names.arg = names, col = colors, border = "blue", space = 1.5)
+par(old.par)
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+barplot(VADeaths, beside = TRUE, col = c("lightblue", "mistyrose", "lightcyan", "lavender", "cornsilk"), legend.text = rownames(VADeaths), ylim = c(0, 100))
+title(main = "Death Rates in Virginia", font.main = 4)
+par(old.par)
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+barplot(t(VADeaths), beside = TRUE, col = c("lightblue", "mistyrose", "lightcyan", "lavender"), legend.text = rownames(t(VADeaths)), ylim = c(0, 80), args.legend = list(x = "topleft"))
+title(main = "Death Rates in Virginia", font.main = 4)
+par(old.par)
+
+colnames(VADeaths) <- c("RM", "RF", "UM", "UF")
+old.par <- par(mfrow = c(1, 2), mex = .8, mar = c(5, 4, 3, 1) + .1)
+dotchart(VADeaths, xlim = c(0, 100), xlab = "Deaths per 1000", main = "Death rates")
+dotchart(t(VADeaths), xlim = c(0, 100), xlab = "Deaths per 1000", main = "Death Rates")
+par(old.par)
+
+data(warpbreaks)
+str(warpbreaks)
+with(warpbreaks, tapply(breaks, INDEX = wool, FUN = sum))
+with(warpbreaks, tapply(breaks, INDEX = tension, FUN = sum))
+with(warpbreaks, tapply(breaks, INDEX = list(wool, tension), FUN = sum))
+xtabs(breaks ~ wool, data = warpbreaks)
+xtabs(breaks ~ tension, data = warpbreaks)
+xtabs(breaks ~ wool + tension, data = warpbreaks)
+ftable(xtabs(breaks ~ wool + tension, data = warpbreaks))
+
+t1 <- with(warpbreaks, tapply(breaks, INDEX = list(wool, tension), FUN = sum))
+t2 <- with(warpbreaks, tapply(breaks, INDEX = list(wool, tension), FUN = mean))
+old.par <- par(mfrow = c(1, 2), mex = .8, mar = c(5, 4, 3, 1) + .1)
+barplot(t1, beside = TRUE, col = c("lightblue", "mistyrose"), main = "counts", legend.text = rownames(t1), ylim = c(0, max(t1)))
+barplot(t2, beside = TRUE, col = c("lightblue", "mistyrose"), main = "means", legend.text = rownames(t2), ylim = c(0, max(t2)))
+par(old.par)
+
+brks <- as.integer(xtabs(breaks ~ wool + tension, data = warpbreaks))
+label <- c("AL", "BL", "AM", "BM", "AH", "BH")
+old.par <- par(mfrow = c(1, 2), mex = .2, mar = c(3, 3, 3, 2) + .1)
+pie(brks, label = label)
+pie(brks, label = label, col = gray(seq(from = 0.4, to = 1.0, length = 8)))
+par(old.par)
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+pairs(iris[, 1:4], panel = panel.smooth)
+par(old.par)
+
+panel.hist <- function(x, ...) {
+        usr <- par("usr")
+        on.exit(par(usr))
+        par(usr = c(usr[1:2], 0, 1.5))
+        h <- hist(x, plot = FALSE)
+        breaks <- h$breaks
+        nB <- length(breaks)
+        y <- h$counts
+        y <- y / max(y)
+        rect(breaks[-nB], 0, breaks[-1], y, col = "cyan", ...)
+        lines(density(x, na.rm = TRUE), col = "red")
+}
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+pairs(iris[, 1:4], panel = panel.smooth, pch = 1, bg = "lightcyan", diag.panel = panel.hist, font.labels = 2, cex.labels = 1.2)
+par(old.par)
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+pairs(iris[, 1:4], pch = c(1, 2, 4)[iris$Species], col = c("red", "green", "blue")[iris$Species])
+par(old.par)
+
+library(lattice)
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+xyplot(Sepal.Length + Sepal.Width ~ Petal.Length + Petal.Width | Species, data = iris, layout = c(2, 2), scales = list(cex = .5, cex.lab = .5, relation = "free"), auto.key = TRUE)
+
+setosa <- iris[iris$Species == "setosa", 1:4]
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+boxplot(setosa, names = c("sep.len", "sep.wid", "pet.len", "pet.wid"), main = "Iris setosa")
+par(old.par)
+
+old.par <- par(mfrow = c(1, 2), mex = .5, mar = c(5, 4, 4, 2) + .1)
+with(iris, boxplot(Sepal.Length ~ Species, main = "Sepal length"))
+with(iris, boxplot(Sepal.Length ~ Species, notch = TRUE, main = "Sepal length"))
+par(old.par)
+
+sx <- with(iris, split(Sepal.Length, Species))
+old.par <- par(mfrow = c(1, 2), mex = .5, mar = c(5, 4, 4, 2), + .1)
+boxplot(sx, main = "Sepal length")
+boxplot(sx, notch = TRUE, main = "Sepal length")
+par(old.par)
+
+sx <- with(iris, split(Sepal.Length, Species))
+sy <- with(iris, split(Sepal.Width, Species))
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+plot(0, xlim = range(sx), ylim = range(sy), type = "n", xlab = "x", ylab = "y")
+points(sx[[1]], sy[[1]], pch = 1, col = 1)
+points(sx[[2]], sy[[2]], pch = 2, col = 2)
+points(sx[[3]], sy[[3]], pch = 3, col = 3)
+for(i in 1:3) abline(lm(sy[[i]] ~ sx[[i]]), col = i)
+legend("topright", legend = c("setosa", "versicolor", "virginica"), lty = 1, pch = 1:3, col = 1:3)
+par(old.par)
+
+x <- iris[[1]]
+y <- iris[[2]]
+species <- iris[[5]]
+library(lattice)
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+xyplot(y ~ x, groups = species, type = c("g", "p", "r"), auto.key = TRUE)
+par(old.par)
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+xyplot(y ~ x | species, type = c("g", "p", "r"), auto.key = TRUE)
+par(old.par)
+
+x <- iris[[1]]
+y <- iris[[2]]
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+qqplot(x, y)
+abline(a = 0, b = 1, col = "red")
+par(old.par)
+
+f <- function(x, y) {
+        r <- sqrt(x^2 + y^2)
+        10 * sin(r) / r
+}
+x <- seq(from = -10, to = 10, length = 50)
+y <- x
+z <- outer(x, y, f)
+z[is.na(z)] <- 1
+
+old.par <- par(mfrow = c(1, 2), mex = .4, mar = c(5, 4, 3, 1) + .1, bg = "white")
+persp(x, y, z, theta = 30, phi = 30, expand = .5, col = "lightgreen")
+persp(x, y, z, theta = 30, phi = 30, expand = .5, col = "lightblue", ltheta = 120, shade = .75, ticktype = "detailed", xlab = "x", ylab = "y", zlab = "f(x, y)")
+par(old.par)
+
+persp(x, y, z, theta = 30, phi = 30, expand = .5, col = "lightgreen", box = FALSE)
+
+library(lattice)
+f <- function(x, y) {
+        r <- sqrt(x^2 + y^2);
+        10 * sin(r) / r
+}
+y <- x <- seq(from = -10, to = 10, length = 50)
+h <- expand.grid(x = x, y = y)
+z <- f(h$x, h$y)
+z[is.na(z)] <- 1
+old.par <- par(mex = .8, mar = c(5, 5, 3, 1) + .1)
+wireframe(z ~ h$x * h$y, xlab = "x", ylab = "y", zlab = "f(x, y)")
+par(old.par)
+
+old.par <- par(mex = .8, mar = c(5, 5, 3, 1) + .1, cex.axis = .5)
+wireframe(z ~ h$x * h$y, xlab = "x", ylab = "y", zlab = "f(x, y)", scales = list(arrows = FALSE), light.source = c(10, 0, 10), col = "lightblue")
+par(old.par)
+
+wireframe(z ~ h$x * h$y, xlab = "x", ylab = "y", zlab = "f(x, y)", scales = list(arrows = TRUE), shade = TRUE, light.source = c(10, 0, 10), col = "lightblue")
+wireframe(z ~ h$x * h$y, xlab = "x", ylab = "y", zlab = "f(x, y)", scales = list(arrows = FALSE), shade = TRUE, light.source = c(10, 0, 10), col = "lightblue", colorkey = TRUE)
+wireframe(z ~ h$x * h$y, xlab = "x", ylab = "y", zlab = "f(x, y)", scales = list(arrows = FALSE), shade = TRUE, light.source = c(10, 0, 10), col = "lightblue", colorkey = TRUE, drape = TRUE, screen = list(z = 30, x = -60))
+
+library(rgl)
+
+f <- function(x, y) {
+        r <- sqrt(x^2 + y^2);
+        10 * sin(r) / r
+}
+y <- x <- seq(from = -10, to = 10, length = 50)
+z <- outer(x, y, f)
+z[is.na(z)] <- 1
+
+persp3d(x, y, z, xlab = "x", ylab = "y", zlab = "f(x, y)", col = "lightblue")
+
+rgl.snapshot("/Users/thomas/Documents/R Files/persp1.png")
+snapshot3d("/Users/thomas/Documents/R Files/persp2.png")
+
+persp3d(x, y, z, xlab = "x", ylab = "y", zlab = "f(x, y)", col = "lightblue")
+play3d(spin3d(axis = c(0, 0, 1), rpm = 8), duration = 10)
+play3d(spin3d(axis = c(0, 1, 0), rpm = 6), duration = 10)
+play3d(spin3d(axis = c(0, 1, 1), rpm = 8), duration = 5)
+
+f <- function(x, y) {
+        r <- sqrt(x^2 + y^2);
+        10 * sin(r) / r
+}
+x <- seq(from = -10, to = 10, length = 100)
+y <- x
+z <- outer(x, y, f)
+z[is.na(z)] <- 1
+
+old.par <- par(mfrow = c(1, 2), mex = .5, mar = c(5, 4, 3, 1) + .1)
+image(x, y, z, col = cm.colors(20))
+contour(x, y, z, add = TRUE)
+col <- gray(seq(from = .4, to = 1.0, length = 6))
+image(x, y, z, col = col)
+contour(x, y, z, add = TRUE)
+par(old.par)
+
+old.par <- par(mfrow = c(1, 2), mex = .5, mar = c(6, 4, 3, 1) + .1)
+image(x, y, z, col = cm.colors(20))
+contour(x, y, z, levels = c(-5, -2, 0, 2, 5), lwd = c(1, 1, 2, 1, 1), add = TRUE)
+image(x, y, z, col = cm.colors(20))
+contour(x, y, z, levels = 0, lwd = 2, add = TRUE)
+par(old.par)
+
+old.par <- par(mex = .8, mar = c(3, 3, 2, 1) + .1)
+filled.contour(x, y, z)
+par(old.par)
+
+old.par <- par(mex = .8, mar = c(3, 3, 2, 1) + .1)
+filled.contour(x, y, z, levels = c(-5, -2, 0, 2, 5), lwd = c(1, 1, 2, 1, 1))
+par(old.par)
+
+data(iris)
+x <- iris[, 1]
+y <- iris[, 2]
+z <- iris[, 3]
+
+library(lattice)
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+cloud(z ~ x * y, groups = iris$Species, pch = 1:3, col = 1:3, scales = list(arrows = FALSE), light.source = c(10, 0, 10))
+par(old.par)
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+cloud(z ~ x * y, groups = iris$Species, pch = 1:3, col = 1:3, scales = list(arrows = FALSE), light.source = c(10, 0, 10), shade = TRUE, colorkey = TRUE)
+par(old.par)
+
+library(scatterplot3d)
+old.par <- par(mfrow = c(1, 2), mex = .5, mar = c(5, 5, 3, 1) + .1)
+scatterplot3d(x, y, z, xlab = "x", ylab = "y", zlab = "z", angle = 30, y.margin.add = .1, scale.y = .7, pch =c(1, 2, 3)[iris$Species], color = c("red", "green", "blue")[iris$Species])
+scatterplot3d(x, y, z, xlab = "x", ylab = "y", zlab = "z", type = "h", angle = 30, y.margin.add = .1, scale.y = .7, pch = c(1, 2, 3)[iris$Species], color = c("red", "green", "blue")[iris$Species])
+par(old.par)
+
+library(rgl)
+plot3d(x, y, z, pch = c(1, 2, 3)[iris$Species], col = c("red", "green", "blue")[iris$Species])
+plot3d(x, y, z, pch = c(1, 2, 3)[iris$Species], col = c("red", "green", "blue")[iris$Species])
+play3d(spin3d(axis = c(0, 0, 1), rpm = 8), duration = 10)
+play3d(spin3d(axis = c(0, 1, 0), rpm = 8), duration = 10)
+play3d(spin3d(axis = c(0, 1, 1), rpm = 8), duration = 10)
+
+# install.packages("SemiPar")
+library(SemiPar)
+data(pig.weights, package = "SemiPar")
+str(pig.weights)
+xtabs(weight ~ id.num + num.weeks, data = pig.weights)
+ftable(xtabs(weight ~ id.num + num.weeks, data = pig.weights))
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+plot(weight ~ num.weeks, data = pig.weights)
+for(i in 1:48) lines(weight ~ num.weeks, subset(pig.weights, id.num == i), col = i)
+par(old.par)
+
+library(lattice)
+xyplot(weight ~ num.weeks, data = pig.weights, groups = id.num, type = "b")
+
+library(nlme)
+pig.growth <- groupedData(weight ~ num.weeks | id.num, data = pig.weights)
+class(pig.growth)
+plot(pig.growth, outer = ~1, key = FALSE)
+plot(pig.growth, outer = ~1, key = TRUE)
+
+old.par <- par(mex = .8, mar = c(5, 4, 3, 1) + .1)
+xyplot(weight ~ num.weeks | id.num, data = pig.weights, type = c("b", "g", "p", "r"), scales = list(cex = .5, cex.axis = .5, cex.lab = .5), auto.key = TRUE)
+par(old.par)
+
+library(nlme)
+pig.growth <- groupedData(weight ~ num.weeks | id.num, data = pig.weights)
+class(pig.growth)
+plot(pig.growth, pch = 16)
