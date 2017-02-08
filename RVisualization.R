@@ -1,8 +1,6 @@
 # 1. R 基礎 =====
 
-
 # 2. 快速探索數據 =====
-
 
 ## 2.1 散佈圖 =====
 
@@ -69,7 +67,6 @@ ggplot(ToothGrowth, aes(x = interaction(supp, dose), y = len)) + geom_boxplot() 
 ## 2.6 函數圖形 =====
 
 curve(x ^ 3 - 5 * x, from = -4, to = 4)
-
 myfun <- function(xvar) {
         1 / (1 + exp(-xvar + 10))
 }
@@ -143,7 +140,6 @@ csub
 ggplot(csub, aes(x = Year, y = Anomaly10y, fill = pos)) + 
         geom_bar(stat = "identity", position = "identity")
 # position = "identity" 可以避免系統畫負值而產生的警告訊息
-
 # 但是暖色通常用於正值才對
 
 ggplot(csub, aes(x = Year, y = Anomaly10y, fill = pos)) + 
@@ -246,7 +242,6 @@ ggplot(ce, aes(x = Date, y = Weight, fill = Cultivar)) +
         geom_bar(stat = "identity") +
         geom_text(aes(y = label_y, label = Weight), vjust = 1.5, colour = "white")
 
-
 ce <- arrange(cabbage_exp, Date, Cultivar)
 ce <- ddply(ce, "Date", transform, label_y = cumsum(Weight) - .5 * Weight) # 把標籤放在長條圖正中間
 ggplot(ce, aes(x = Date, y = Weight, fill = Cultivar)) +
@@ -276,6 +271,7 @@ BOD
 
 BOD1 <- BOD
 BOD1$Time <- factor(BOD1$Time) # 連續型變量轉factor
+# 注意！！！
 ggplot(BOD1, aes(x = Time, y = demand, group = 1)) + geom_line() # 對於factor變量，要加入 group = 1 確認為同一組資料
 
 
@@ -287,7 +283,6 @@ ggplot(BOD, aes(x = Time, y = demand)) + geom_line() + expand_limits(y = 0)
 # 4.2 加上資料標記 =====
 
 ggplot(BOD, aes(x = Time, y = demand)) + geom_line() + geom_point()
-
 
 library(gcookbook)
 ggplot(worldpop, aes(x = Year, y = Population)) + geom_line() + geom_point()
@@ -328,7 +323,7 @@ ggplot(BOD, aes(x = Time, y = demand)) +
 
 library(plyr)
 tg <- ddply(ToothGrowth, c("supp", "dose"), summarise, length = mean(len))
-ggplot(tg, aes(x = dose, y = length, colou = supp)) + 
+ggplot(tg, aes(x = dose, y = length, colour = supp)) + 
         geom_line() + scale_colour_brewer(palette = "Set1")
 
 ggplot(tg, aes(x = dose, y = length, group = supp)) + 
@@ -370,7 +365,8 @@ ggplot(sunspotyear, aes(x = Year, y = Sunspots)) +
 ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) + geom_area()
 
 # default 的堆積順序與圖標有時是相反的，可以用 breaks 參數調整
-ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) + geom_area(colour = "black", size = .2, alpha = .4) +
+ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup)) + 
+        geom_area(colour = "black", size = .2, alpha = .4) +
         scale_fill_brewer(palette = "Blues", breaks = rev(levels(uspopage$AgeGroup)))
 
 library(plyr)
@@ -380,7 +376,7 @@ ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup, order = desc(AgeG
         scale_fill_brewer(palette = "Blues")
 
 ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup, order = desc(AgeGroup))) +
-        geom_area(colour = NA, alpha = .4) +
+        geom_area(colour = NA, alpha = .4) +  # 不設定colour就不會有底線
         scale_fill_brewer(palette = "Blues") +
         geom_line(position = "stack", size = .2) # 堆積面積圖加線
 
@@ -389,6 +385,7 @@ ggplot(uspopage, aes(x = Year, y = Thousands, fill = AgeGroup, order = desc(AgeG
 
 library(gcookbook)
 library(plyr)
+# 注意！！！
 uspopage_prop <- ddply(uspopage, "Year", transform, Percent = Thousands / sum(Thousands) * 100)
 # ddply 將 uspopage 資料集，按照 Year 拆成多個獨立的 data frames
 
@@ -413,7 +410,6 @@ ggplot(clim, aes(x = Year, y = Anomaly10y)) +
 
 
 # 5. 散佈圖 =====
-
 
 # 5.1 散佈圖 =====
 
@@ -445,6 +441,7 @@ ggplot(heightweight, aes(x = ageYear, y = heightIn, shape = sex)) + geom_point(s
 
 
 hw <- heightweight
+# 注意！！！
 hw$weightGroup <- cut(hw$weightLb, breaks = c(-Inf, 100, Inf), labels = c("< 100", ">= 100"))
 ggplot(hw, aes(x = ageYear, y = heightIn, shape = sex, fill = weightGroup)) + 
         geom_point(size = 2.5) +
@@ -471,6 +468,7 @@ ggplot(heightweight, aes(x = ageYear, y = heightIn, fill = weightLb)) +
         scale_fill_gradient(low = "black", high = "white", breaks = seq(70, 170, by = 20), guide = guide_legend())
 # 黑白漸層搭配離散圖標
 
+# 注意！！！
 ggplot(heightweight, aes(x = ageYear, y = heightIn, size = weightLb, colour = sex)) + 
         geom_point(alpha = .5) +
         scale_size_area() +  # 使面積與資料值成正比
@@ -492,11 +490,9 @@ sp + geom_point()
 
 sp + geom_point(alpha = .1) # 90%透明度
 sp + geom_point(alpha = .01) # 99%透明度
-
-
+# 注意！！！
 sp + stat_bin2d() # 分別在x軸y軸分割30組，共900個箱子
 sp + stat_bin2d(bins = 50) + scale_fill_gradient(low = "lightblue", high = "red", limits = c(0, 6000)) # 2500箱
-
 
 library(hexbin) # 使用六邊形箱子
 sp + stat_binhex() + scale_fill_gradient(low = "lightblue", high = "red", limits = c(0, 8000))
@@ -505,7 +501,6 @@ sp + stat_binhex() + scale_fill_gradient(low = "lightblue", high = "red", breaks
 
 
 # 當其中一軸或兩軸為離散型變數時，也會出現overplotting，可用 position_jitter() 增加隨機擾動
-
 sp1 <- ggplot(ChickWeight, aes(x = Time, y = weight))
 sp1 + geom_point()
 sp1 + geom_point(position = "jitter") # 跟 position_jitter() 意思一樣
@@ -522,24 +517,22 @@ sp <- ggplot(heightweight, aes(x = ageYear, y = heightIn))
 sp + geom_point() + stat_smooth(method = lm) # default 為95%信賴區間
 
 sp + geom_point() + stat_smooth(method = lm, level = .99) # 調整 level 可調整信賴區間
-
-sp + geom_point(colour = "grey60") + stat_smooth(method = lm, se = FALSE, colour = "black")
+sp + geom_point(colour = "grey60") + 
+        stat_smooth(method = lm, se = FALSE, colour = "black")
 
 # stat_smooth 的 default 是 loess曲線
 sp + geom_point(colour = "grey60") + stat_smooth()
 sp + geom_point(colour = "grey60") + stat_smooth(method = loess) # the same
-
 
 library(MASS)
 b <- biopsy
 b$classn[b$class == "benign"] <- 0
 b$classn[b$class == "malignant"] <- 1
 b
-
+# 注意！！！
 ggplot(b, aes(x = V1, y = classn)) + 
         geom_point(position = position_jitter(width = .3, height = .06), alpha = .4, shape = 21, size = 1.5) + 
         stat_smooth(method = glm, method.args = list(family = "binomial"))
-
 
 sps <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + 
         geom_point() + 
@@ -599,7 +592,7 @@ b$classn[b$class == "malignant"] <- 1
 fitlogistic <- glm(classn ~ V1, b, family = binomial)
 glm_predicted <- predictvals(fitlogistic, "V1", "classn", type = "response")
 ggplot(b, aes(x = V1, y = classn)) + 
-        geom_point(position = position_jitter(width = .3, height = .08), alpha = .4, shape = 21, size = 1.5) +
+        geom_point(position = position_jitter(width = .3, height = .08), alpha = .4, shape = 21, size = 1.5) + 
         geom_line(data = glm_predicted, colour = "#1177FF", size = 1)
 
 
@@ -620,7 +613,6 @@ predvals
 ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point() + 
         geom_line(data = predvals)
 
-
 predvals <- ldply(models, .fun = predictvals, xvar = "ageYear", yvar = "heightIn", xrange = range(heightweight$ageYear))
 # 把兩組的x軸範圍調整成相同
 ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point() + geom_line(data = predvals)
@@ -637,7 +629,6 @@ sp <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point() + geom
 sp + annotate("text", label = "r^2 = 0.42", x = 16.5, y = 52) # 加入係數標籤
 sp + annotate("text", label = "r^2 == 0.42", parse = TRUE, x = 16.5, y = 52) # 用R的方式表示數學符號
 
-
 eqn <- as.character(as.expression(
         substitute(italic(y) == a + b * italic(x) * "," ~~ italic(r)^2 ~ "=" ~ r2, 
                    list(a = format(coef(model)[1], digits = 3),
@@ -645,9 +636,7 @@ eqn <- as.character(as.expression(
                         r2 = format(summary(model)$r.squared, digits = 2)
                         ))))
 eqn
-
 parse(text = eqn)
-
 
 sp + annotate("text", label = eqn, parse = TRUE, x = Inf, y = -Inf, hjust = 1.1, vjust = -.5)
 # x = Inf, y = -Inf 使公式置於右下角
@@ -671,9 +660,7 @@ sp <- ggplot(subset(countries, Year == 2009 & healthexp > 2000),
 sp + annotate("text", x = 4350, y = 5.4, label = "Canada") +
         annotate("text", x = 7400, y = 6.8, label = "USA")
 
-
 sp + geom_text(aes(label = Name), size = 4) # geom_text() 可用factor或char類型的向量製作標籤
-
 
 sp + geom_text(aes(label = Name), size = 4, vjust = 0)
 sp + geom_text(aes(y = infmortality + .1, label = Name), size = 4, vjust = 0)
@@ -685,6 +672,7 @@ sp + geom_text(aes(label = Name), size = 4, hjust = 0)
 sp + geom_text(aes(x = healthexp + 100, label = Name), size = 4, hjust = 0)
 
 
+# 注意！！！
 # 如果不想要全部加上標籤，可以複製一個新的標籤
 cdat <- subset(countries, Year == 2009 & healthexp > 2000)
 cdat$Name1 <- cdat$Name
@@ -696,7 +684,8 @@ cdat$Name1[!idx] <- NA
 cdat
 
 ggplot(cdat, aes(x = healthexp, y = infmortality)) + geom_point() + 
-        geom_text(aes(x = healthexp + 100, label = Name1), size = 4, hjust = 0) + xlim(2000, 10000)
+        geom_text(aes(x = healthexp + 100, label = Name1), size = 4, hjust = 0) + 
+        xlim(2000, 10000)
 
 
 # 5.12 氣泡圖 =====
@@ -706,7 +695,8 @@ cdat <- subset(countries, Year == 2009 & Name %in% c("Canada", "Ireland", "Unite
                                                      "United States", "New Zealand", "Iceland","Japan", 
                                                      "Luxembourg", "Netherlands", "Switzerland"))
 cdat
-p <- ggplot(cdat, aes(x = healthexp, y = infmortality, size = GDP)) + geom_point(shape = 21, colour = "black", fill = "cornsilk")
+p <- ggplot(cdat, aes(x = healthexp, y = infmortality, size = GDP)) + 
+        geom_point(shape = 21, colour = "black", fill = "cornsilk")
 p
 p + scale_size_area(max_size = 15) # 以GDP決定面積
 
@@ -727,7 +717,6 @@ library(gcookbook)
 c2009 <- subset(countries, Year == 2009, select = c(Name, GDP, laborrate, healthexp, infmortality))
 c2009
 pairs(c2009[, 2:5])
-
 
 # 自定義的面板函數
 panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
@@ -783,29 +772,27 @@ ggplot(faithful, aes(x = waiting)) +
         geom_histogram(binwidth = 5, 
                        fill = "white",  # 填滿
                        colour = "black") # 邊框顏色
-
+# 注意！！！
 binsize <- diff(range(faithful$waiting)) / 15 # 計算binwidth
 ggplot(faithful, aes(x = waiting)) + geom_histogram(binwidth = binsize, fill = "white", colour = "black")
-
 
 h <- ggplot(faithful, aes(x = waiting)) # 儲存成變量以便重複利用
 
 h + geom_histogram(binwidth = 8, fill = "white", colour = "black", origin = 31) # 設定組邊界
-h + geom_histogram(binwidth = 8, fill = "white", colour = "black", origin = 35)
-
-# geom_bar(stat = "bin") 可得相同結果
+h + geom_histogram(binwidth = 8, fill = "white", colour = "black", origin = 35) # geom_bar(stat = "bin") 可得相同結果
 
 
 ## 6.2 多組資料直方圖 =====
 
 library(MASS) # 取用數據
-ggplot(birthwt, aes(x = bwt)) + geom_histogram(fill = "white", colour = "black") + 
+ggplot(birthwt, aes(x = bwt)) + 
+        geom_histogram(fill = "white", colour = "black") + 
         facet_grid(smoke ~ .)
 
 birthwt1 <- birthwt
 birthwt1$smoke <- factor(birthwt1$smoke)
 levels(birthwt1$smoke) # 標籤是0, 1不方便
-
+# 注意！！！
 library(plyr) # 為了使用 revalue()
 birthwt1$smoke <- revalue(birthwt1$smoke, c("0" = "No Smoke", "1" = "Smoke"))
 
@@ -818,6 +805,7 @@ ggplot(birthwt, aes(x = bwt)) + geom_histogram(fill = "white", colour = "black")
         facet_grid(race ~ ., scales = "free") # scales = "free" 可以單獨設定各y軸尺度
 
 birthwt1$smoke <- factor(birthwt1$smoke)
+# 注意！！！
 ggplot(birthwt1, aes(x = bwt, fill = smoke)) + 
         geom_histogram(position = "identity",  # 使直方圖重疊
                        alpha = .4) # 設定透明度
@@ -845,9 +833,8 @@ ggplot(faithful, aes(x = waiting)) +  # 帶寬不同，曲線的光滑程度不�
 ggplot(faithful, aes(x = waiting)) + geom_density(fill = "blue", alpha = .2) + 
         xlim(35, 105) # 限制x軸範圍
 
-ggplot(faithful, aes(x = waiting)) + geom_density(fill = "blue", colour = NA, alpha = .2) +
+ggplot(faithful, aes(x = waiting)) + geom_density(fill = "blue", colour = NA, alpha = .2) + 
         geom_line(stat = "density") + xlim(35, 105)
-
 
 ggplot(faithful, aes(x = waiting, y = ..density..)) +  # y = ..density.. 可以縮小直方圖的尺度以配合密度曲線
         geom_histogram(fill = "cornsilk", colour = "grey60", size = .2) +
@@ -863,7 +850,6 @@ birthwt1$smoke <- factor(birthwt1$smoke) # 必須先轉化為factor
 ggplot(birthwt1, aes(x = bwt, colour = smoke)) + geom_density()
 
 ggplot(birthwt1, aes(x = bwt, fill = smoke)) + geom_density(alpha = .3)
-
 
 ggplot(birthwt1, aes(x = bwt)) + geom_density() + facet_grid(smoke ~ .)
 levels(birthwt1$smoke)
@@ -882,9 +868,7 @@ ggplot(birthwt1, aes(x = bwt, y = ..density..)) +
 # freqpoly 跟 histogram 非常類似，而核密度曲線只是一個估計
 
 ggplot(faithful, aes(x = waiting)) + geom_freqpoly()
-
 ggplot(faithful, aes(x = waiting)) + geom_freqpoly(binwidth = 4) # 控制組距
-
 binsize <- diff(range(faithful$waiting)) / 15
 ggplot(faithful, aes(x = waiting)) + geom_freqpoly(binwidth = binsize)
 
@@ -893,13 +877,9 @@ ggplot(faithful, aes(x = waiting)) + geom_freqpoly(binwidth = binsize)
 
 library(MASS)
 ggplot(birthwt, aes(x = factor(race), y = bwt)) + geom_boxplot()
-
 ggplot(birthwt, aes(x = factor(race), y = bwt)) + geom_boxplot(width = .5) # 調整箱型圖寬度
-
 ggplot(birthwt, aes(x = factor(race), y = bwt)) + 
         geom_boxplot(outlier.size = 1.5, outlier.shape = 21) # 修改outlier的外觀
-
-
 ggplot(birthwt, aes(x = 1, y = bwt)) + geom_boxplot() + 
         scale_x_continuous(breaks = NULL) +  #只有1組，x軸不標記
         theme(axis.title.x = element_blank())
@@ -908,12 +888,11 @@ ggplot(birthwt, aes(x = 1, y = bwt)) + geom_boxplot() +
 ## 6.7 缺口箱型圖 =====
 
 ggplot(birthwt, aes(x = factor(race), y = bwt)) + geom_boxplot(notch = TRUE)
-
 # 若各組缺口不重疊，表示各組中位數有差異
 
 
 ## 6.8 箱型圖加平均值 =====
-
+# 注意！！！
 ggplot(birthwt, aes(x = factor(race), y = bwt)) + geom_boxplot() + 
         stat_summary(fun.y = "mean", geom = "point", shape = 23, size = 3, fill = "white")
 
@@ -929,9 +908,7 @@ p + geom_violin() +  # 同時畫小提琴圖跟箱型圖
         geom_boxplot(width = .1, fill = "black", outlier.colour = NA) +
         stat_summary(fun.y = median, geom = "point", fill = "white", shape = 21, size = 2.5)
 
-
 p + geom_violin(trim = FALSE)
-
 # default情況是不同組的小提琴圖面積會相同，可以用scale = "count"調整
 
 p + geom_violin(scale = "count")
@@ -968,18 +945,20 @@ p + geom_dotplot(binwidth = .25, stackdir = "centerwhole") +
 ## 6.11 多組資料點圖 =====
 
 library(gcookbook)
-ggplot(heightweight, aes(x = sex, y = heightIn)) + geom_dotplot(binaxis = "y", binwidth = .5, stackdir = "center")
-
+# sex為factor類型
+ggplot(heightweight, aes(x = sex, y = heightIn)) + 
+        geom_dotplot(binaxis = "y", binwidth = .5, stackdir = "center")
 # 同時畫箱型圖跟點圖
-ggplot(heightweight, aes(x = sex, y = heightIn)) + geom_boxplot(outlier.colour = NA, width = .4) + 
+ggplot(heightweight, aes(x = sex, y = heightIn)) + 
+        geom_boxplot(outlier.colour = NA, width = .4) + 
         geom_dotplot(binaxis = "y", binwidth = .5, stackdir = "center", fill = NA)
 
-
-# 把箱型圖畫在點圖旁邊
+# 把箱型圖畫在點圖旁邊（移動整體y值）
 ggplot(heightweight, aes(x = sex, y = heightIn)) + 
-        geom_boxplot(aes(x = as.numeric(sex) + .2, group = sex), width = .25) +
-        geom_dotplot(aes(x = as.numeric(sex) - .2, group = sex), binaxis = "y", binwidth = .5, stackdir = "center") +
+        geom_boxplot(aes(x = as.numeric(sex) + .2, group = sex), width = .25) + 
+        geom_dotplot(aes(x = as.numeric(sex) - .2, group = sex), binaxis = "y", binwidth = .5, stackdir = "center") + 
         scale_x_continuous(breaks = 1:nlevels(heightweight$sex), labels = levels(heightweight$sex))
+# nlevels(): 算某factor有幾個level
 
 
 ## 6.12 二維資料密度圖 =====
@@ -987,16 +966,14 @@ ggplot(heightweight, aes(x = sex, y = heightIn)) +
 p <- ggplot(faithful, aes(x = eruptions, y = waiting))
 p + geom_point() + stat_density2d()
 
-
 p + stat_density2d(aes(colour = ..level..)) # 把密度曲面的高度映射給等高線的顏色
-
 
 # 將密度估計映射給填充色或瓦片圖的透明度
 # 柵格: raster
 # 瓦片: tile
 p + stat_density2d(aes(fill = ..density..), geom = "raster", contour = FALSE)
-p + geom_point() + stat_density2d(aes(alpha = ..density..), geom = "tile", contour = FALSE)
-
+p + geom_point() + 
+        stat_density2d(aes(alpha = ..density..), geom = "tile", contour = FALSE)
 p + stat_density2d(aes(fill = ..density..), geom = "raster", contour = FALSE, h = c(.5, 5))
 
 
@@ -1004,7 +981,7 @@ p + stat_density2d(aes(fill = ..density..), geom = "raster", contour = FALSE, h 
 
 ## 7.1 添加文本註解 =====
 
-p <- ggplot(faithful, aes(x= eruptions, y = waiting)) + geom_point()
+p <- ggplot(faithful, aes(x = eruptions, y = waiting)) + geom_point()
 p + annotate("text", x = 3, y = 48, label = "Group 1") + 
         annotate("text", x = 4.5, y = 66, label = "Group 2")
 
@@ -1016,7 +993,7 @@ p + annotate("text", x = 3, y = 48, label = "Group 1", family = "serif", fontfac
 # 如果使用 geom_text() ，文本會在相同位置被遮蓋
 p + annotate("text", x = 3, y = 48, label = "Group 1", alpha = .1) + 
         geom_text(x = 4.5, y = 66, label = "Group 2", alpha = .1)
-
+# 注意！！！
 p + annotate("text", x = -Inf, y = Inf, label = "Upper left", hjust = -.2, vjust = 2) + 
         annotate("text", x = mean(range(faithful$eruptions)), y = -Inf, vjust = -.4, label = "Bottom middle")
 # Inf, -Inf 在繪圖區邊緣放置文本，hjust, vjust 調整文本相對於邊緣的位置
@@ -1052,18 +1029,23 @@ p + geom_hline(aes(yintercept = heightIn, colour = sex), data = hw_means, linety
 pg <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_point()
 pg + geom_vline(xintercept = 1)
 pg + geom_vline(xintercept = which(levels(PlantGrowth$group) == "ctrl"))
-
+# which(levels(PlantGrowth$group) == "ctrl") 其實就是1
 
 ## 7.4 添加線段和箭頭 =====
 
 library(gcookbook)
-p <- ggplot(subset(climate, Source == "Berkeley"), aes(x = Year, y = Anomaly10y)) + geom_line()
+p <- ggplot(subset(climate, Source == "Berkeley"), aes(x = Year, y = Anomaly10y)) + 
+        geom_line()
+# 注意！！！
 p + annotate("segment", x = 1950, xend = 1980, y = -.25, yend = -.25)
-
 library(grid)
 p + annotate("segment", x = 1850, xend = 1820, y = -.8, yend = -.95, colour = "blue", size = 2, arrow = arrow()) + 
         annotate("segment", x = 1950, xend = 1980, y = -.25, yend = -.25, arrow = arrow(ends = "both", angle = 90, length = unit(.2, "cm")))
 # 前者為30度箭頭，後者為90度雙箭頭
+ggplot(subset(climate, Source == "Berkeley"), aes(x = Year, y = Anomaly10y)) + 
+        geom_line() + 
+        annotate("segment", x = 1850, xend = 1820, y = -.8, yend = -.95, colour = "blue", size = 2, arrow = arrow()) + 
+        annotate("segment", x = 1950, xend = 1980, y = -.25, yend = -.25, arrow = arrow(ends = "both", angle = 90, length = unit(.2, "cm")))
 
 
 ## 7.5 添加矩形陰影 =====
@@ -1075,12 +1057,14 @@ p + annotate("rect", xmin = 1950, xmax = 1980, ymin = -1, ymax = 1, alpha = .1, 
 
 ## 7.6 高亮某一元素 =====
 
+# 注意！！！非常實用
 pg <- PlantGrowth
 pg$h1 <- "no"
-pg$h1[pg$group == "trt2"] <- "yes"
+pg$h1[pg$group == "trt2"] <- "yes" # 方法1：改值
 ggplot(pg, aes(x = group, y = weight, fill = h1)) + geom_boxplot() + 
         scale_fill_manual(values = c("grey85", "#FFDDCC"), guide = FALSE)
 
+# 方法2：逐一設定顏色
 ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot() + 
         scale_fill_manual(values = c("grey85", "grey85", "#FFDDCC"), guide = FALSE)
 
@@ -1105,10 +1089,10 @@ ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) +
 ggplot(cabbage_exp, aes(x = Date, y = Weight, fill = Cultivar)) + 
         geom_bar(position = "dodge", stat = "identity") + 
         geom_errorbar(aes(ymin = Weight - se, ymax = Weight + se), position = position_dodge(.9), width = .2)
-
 # position = "dodge"即為position = position_dodge()的縮寫版本
 
-pd <- position_dodge(.3)
+# 注意！！！
+pd <- position_dodge(.3) # 將圖形左右平移
 ggplot(cabbage_exp, aes(x = Date, y = Weight, colour = Cultivar, group = Cultivar)) + 
         geom_errorbar(aes(ymin = Weight - se, ymax = Weight + se), width = .2, size = .25, colour = "black", position = pd) + 
         geom_line(position = pd) + 
@@ -1119,9 +1103,9 @@ ggplot(cabbage_exp, aes(x = Date, y = Weight, colour = Cultivar, group = Cultiva
 
 p <- ggplot(mpg, aes(x = displ, y = hwy)) + geom_point() + facet_grid(. ~ drv)
 f_labels <- data.frame(drv = c("4", "f", "r"), label = c("4wd", "Front", "Rear"))
+# 注意！！！
 p + geom_text(x = 6, y = 40, aes(label = label), data = f_labels)
 p + annotate("text", x = 6, y = 42, label = "label text")
-
 
 lm_labels <- function(dat) {
         mod <- lm(hwy ~ displ, data = dat)
@@ -1138,7 +1122,7 @@ labels
 
 p + geom_smooth(method = lm, se = FALSE) + 
         geom_text(x = 3, y = 40, aes(label = formula), data = labels, parse = TRUE, hjust = 0) + 
-        geom_text(x = 3, y = 34, aes(label = r2), data = labels, parse = TRUE, hjust = 0)
+        geom_text(x = 3, y = 34, aes(label = r2), data = labels, parse = TRUE, hjust = 0) # 以x座標為起始
 
 labels <- ddply(mpg, "drv", summarise, r2 = cor(displ, hwy) ^ 2)
 labels$r2 <- sprintf("italic(R ^ 2) == %.2f", labels$r2)
@@ -1157,16 +1141,13 @@ ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + coord_flip() 
 
 ## 8.2 設置連續型座標軸的值域 =====
 
-p <- ggplot(PlantGrowth, aes(x = group, y= weight)) + geom_boxplot()
+p <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
 p
 
 p + ylim(0, max(PlantGrowth$weight))
-
-
 ylim(0, 10)
 scale_y_continuous(limits = c(0, 10)) # 兩式等價
-
-
+# 注意！！！
 p + ylim(0, 10) + scale_y_continuous(breaks = c(0, 5, 10))
 p + scale_y_continuous(breaks = c(0, 5, 10)) + ylim(0, 10) # 同時使用會產生錯誤
 p + scale_y_continuous(limits = c(0, 10), breaks = c(0, 5, 10)) # 想同時生效可加在參數
@@ -1174,17 +1155,15 @@ p + scale_y_continuous(limits = c(0, 10), breaks = c(0, 5, 10)) # 想同時生�
 p + scale_y_continuous(limits = c(5, 6.5)) # 限制y的值域會使得部分資料被剪除
 p + coord_cartesian(ylim = c(5, 6.5)) # 此法純粹縮放
 
-
 p + expand_limits(y = 0) # 擴展值域
 
 
 # 8.3 反轉一條連續型座標軸 =====
-
+# 注意！！！
 ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + 
         scale_y_reverse() # y軸刻度反轉
-
+#注意方法2！！！把值反著放也可以
 ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + ylim(6.5, 3.5)
-
 
 ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + scale_y_reverse(limits = c(8, 0))
 # ylim()與scale_y_reverse()同樣不能配合，要設定在參數
@@ -1194,7 +1173,6 @@ ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + scale_y_rever
 
 p <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
 p + scale_x_discrete(limits = c("trt1", "ctrl", "trt2"))
-
 
 p + scale_x_discrete(limits = c("ctrl", "trt1")) # 只展示部分類別
 p + scale_x_discrete(limits = rev(levels(PlantGrowth$group))) # 反轉類別順序
@@ -1214,14 +1192,12 @@ sp + coord_fixed(ratio = 1/2) +  # 讓座標軸延伸
         scale_y_continuous(breaks = seq(0, 420, 30)) + 
         scale_x_continuous(breaks = seq(0, 420, 15))
 
-## 8.6 設置刻度線的位置 =====
+
+## 8.6 設置刻度線的位置 breaks =====
 
 ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
 ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + 
         scale_y_continuous(breaks = c(4, 4.25, 4.5, 5, 6, 8))
-
-seq(4, 7, by = .5)
-
 ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + 
         scale_x_discrete(limits = c("trt2", "ctrl"), breaks = "ctrl") # 用limits篩選組別
 
@@ -1230,9 +1206,10 @@ ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() +
 
 p <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
 p + theme(axis.text.y = element_blank()) # 移除刻度標籤
-
+# 注意！！！
 p + theme(axis.ticks = element_blank(), axis.text.y = element_blank()) # 移除兩軸刻度線
-
+# axis.ticks 刻度線
+# axis.text 刻度標籤
 p + scale_y_continuous(breaks = NULL) # 移除刻度線、刻度標籤和網格線
 
 
@@ -1243,7 +1220,7 @@ hwp <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
 hwp + scale_y_continuous(breaks = c(50, 56, 60, 66, 72), labels = c("Tiny", "Really\nshort", "Short", "Medium", "Tallish"))
 # \n 指的是換行！
 
-
+# 注意！！！
 footinch_formatter <- function(x) {
         foot <- floor(x / 12)
         inch <- x %% 12
@@ -1252,7 +1229,6 @@ footinch_formatter <- function(x) {
 
 footinch_formatter(56:64)
 hwp + scale_y_continuous(labels = footinch_formatter)
-
 
 timeHMS_formatter <- function(x) {
         h <- floor(x / 60)
@@ -1266,11 +1242,12 @@ timeHMS_formatter <- function(x) {
 
 timeHMS_formatter(c(.33, 50, 51.25, 59.32, 60, 60.1, 130.23))
 
-# library(scales)
-# comma()：在數字加入逗號
-# dollar()：將美元加入符號並四捨五入到最接近的美分
-# percent()：乘以100並加上百分符號
-# scientific()：科學記數法
+# 注意！！！
+## library(scales)
+## comma()：在數字加入逗號
+## dollar()：將美元加入符號並四捨五入到最接近的美分
+## percent()：乘以100並加上百分符號
+## scientific()：科學記數法
 
 
 ## 8.9 修改刻度標籤的外觀 =====
@@ -1279,9 +1256,7 @@ bp <- ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() +
         scale_x_discrete(breaks = c("ctrl", "trt1", "trt2"), labels = c("Control", " Treatment 1", "Treatment 2"))
 
 bp + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = .5)) # 標籤轉90度
-
 bp + theme(axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1))
-
 bp + theme(axis.text.x = element_text(family = "Times", face = "italic", colour = "darkred", size = rel(0.9)))
 # rel(0.9)指的是目前主題基礎字體大小的0.9倍
 
@@ -1289,15 +1264,13 @@ bp + theme(axis.text.x = element_text(family = "Times", face = "italic", colour 
 ## 8.10 修改座標軸標籤的文本 =====
 
 library(gcookbook)
-
-hwp <- ggplot(heightweight, aes(x = ageYear, y= heightIn, colour = sex)) + geom_point()
+hwp <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + geom_point()
 hwp
 
 hwp + xlab("Age in years") + ylab("Height in inches")
 
 hwp + labs(x = "Age in years", y = "Height in inches")
 hwp + scale_x_continuous(name = "Age in years")
-
 hwp + scale_x_continuous(name = "Age\n(years)")
 
 
@@ -1315,7 +1288,6 @@ library(gcookbook)
 hwp <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
 hwp + theme(axis.title.x = element_text(face = "italic", colour = "darkred", size = 14))
 
-
 hwp + ylab("Height\n(inches)") + 
         theme(axis.title.y = element_text(angle = 0, face = "italic", size = 14))
 
@@ -1327,11 +1299,10 @@ hwp + ylab("Height\n(inches)") +
 
 library(gcookbook)
 p <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
-p + theme(axis.line = element_line(colour = "black"))
-
+p
+p + theme(axis.line = element_line(colour = "red")) # 看不出差在哪
 p + theme_bw() + 
         theme(panel.border = element_blank(), axis.line = element_line(colour = "black"))
-
 p + theme_bw() + 
         theme(panel.border = element_blank(), axis.line = element_line(colour = "black", size = 4, lineend = "square"))
 
@@ -1342,21 +1313,16 @@ library(MASS)
 p <- ggplot(Animals, aes(x = body, y = brain, label = rownames(Animals))) + 
         geom_text(size = 3)
 p
-
 p + scale_x_log10() + scale_y_log10()
-
 p + scale_x_log10(breaks = 10 ^ (-1:5)) + scale_y_log10(breaks = 10 ^ (0:3))
-
 
 library(scales)
 p + scale_x_log10(breaks = 10 ^ (-1:5), labels = trans_format("log10", math_format(10 ^ .x))) + 
         scale_y_log10(breaks = 10 ^ (0:3), labels = trans_format("log10", math_format(10 ^ .x))) # 用scale套件的trans_format()函數即可
 
-
 # 也可以先轉換再畫圖
 ggplot(Animals, aes(x = log10(body), y = log10(brain), label = rownames(Animals))) + geom_text(size = 3)
-
-
+# 注意！！！難！！！
 library(scales)
 p + scale_x_continuous(trans = log_trans(),
                        breaks = trans_breaks("log", function(x) exp(x)),
@@ -1404,14 +1370,14 @@ ggplot(wind, aes(x = DirCat, fill = SpeedCat)) +
         geom_histogram(binwidth = 15, origin = -7.5) + 
         coord_polar() + 
         scale_x_continuous(limits = c(0, 360))
-
+# 注意！！！minor_breaks
 ggplot(wind, aes(x = DirCat, fill = SpeedCat)) + 
         geom_histogram(binwidth = 15, origin = -7.5, colour = "black", size = .25) + 
         guides(fill = guide_legend(reverse = TRUE)) + 
         coord_polar() + 
         scale_x_continuous(limits = c(0, 360), breaks = seq(0, 360, by = 45), minor_breaks = seq(0, 360, by = 15)) + 
         scale_fill_brewer()
-
+# 注意！！！
 ggplot(wind, aes(x = DirCat, fill = SpeedCat)) + 
         geom_histogram(binwidth = 15, origin = -7.5, colour = "black", size = .25) + 
         guides(fill = guide_legend(reverse = TRUE)) + 
@@ -1425,19 +1391,20 @@ md <- data.frame(deaths = as.numeric(mdeaths),
 library(plyr)
 md <- ddply(md, "month", summarise, deaths = mean(deaths))
 md
-
+# 注意！！！
 p <- ggplot(md, aes(x = month, y = deaths)) + geom_line() + 
         scale_x_continuous(breaks = 1:12)
 p + coord_polar() # 線幾何極座標圖
 p + coord_polar() + ylim(0, max(md$deaths))
+# 注意！！！
 p + coord_polar() + ylim(0, max(md$deaths)) + xlim(0, 12) # 設置界限0來解決1跟12在同樣角度的問題
 
-
+# 注意！！！
 mdx <- md[md$month == 12, ]
 mdx$month <- 0 # 新增一筆0月資料，資料跟尾巴（12月）一樣，就可以將起點終點連起來
 mdnew <- rbind(mdx, md)
-
-p %+% mdnew + coord_polar() + ylim(0, max(md$deaths)) # %+% 新資料 ---> 畫原本的圖，但使用新資料
+# 注意！！！這招超神！！！
+p %+% mdnew + coord_polar() + ylim(0, max(md$deaths)) # 舊圖設定 %+% 新資料 ---> 畫原本的圖，但使用新資料
 
 
 ## 8.17 在座標軸上使用日期 =====
@@ -1520,14 +1487,14 @@ p + facet_grid(sex ~ .) + theme(
         strip.background = element_rect(fill = "pink"),
         strip.text.y = element_text(size = 14, angle = -90, face = "bold")
 )
-
+# 注意！！！
 # 想套用現成的主題但又想要微調，微調的部分必須加在theme_bw()之後！
 p + theme(axis.title.x = element_text(colour = "red")) + theme_bw() # 否則會被還原
 p + theme_bw() + theme(axis.title.x = element_text(colour = "red", size = 12))
 
 
 ## 9.5 創建自定義主題 =====
-
+# 注意！！！
 library(gcookbook)
 mytheme <- theme_bw() + 
         theme(text = element_text(colour = "red"), 
@@ -1557,8 +1524,11 @@ p + theme(panel.grid.major.y = element_blank(),
 
 p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
 p
+# 注意！！！
 p + guides(fill = FALSE) # 移除圖例
-p + scale_fill_discrete(guide = FALSE) # 移除標註fill的圖例 # 另外還有scale_colour_discrete(), scale_shape_discrete()
+p + scale_fill_discrete(guide = FALSE)
+# 移除標註fill的圖例
+# 另外還有scale_colour_discrete(), scale_shape_discrete()
 p + theme(legend.position = "none") # 移除「所有」圖例
 
 
@@ -1583,7 +1553,7 @@ p + theme(legend.position = c(.85, .2)) +
 
 p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
 p
-
+# 注意！！！
 p + scale_fill_discrete(limits = c("trt1", "trt2", "ctrl")) # 只能修改圖例的順序
 
 p + scale_x_discrete(limits = c("trt1", "trt2", "ctrl")) + 
@@ -1598,7 +1568,6 @@ p + scale_fill_brewer(palette = "Pastel2", limits = c("trt1", "trt2", "ctrl"))
 p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
 p
 p + guides(fill = guide_legend(reverse = TRUE)) # x軸順序沒變
-
 p + scale_fill_hue(guide_legend(reverse = TRUE)) # default情況下，scale_fill_discrete()和scale_fill_hue()等價
 
 
@@ -1608,6 +1577,7 @@ p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplo
 p
 p + labs(fill = "Condition")
 library(gcookbook)
+# 注意！！！scale_size_continuous()
 hw <- ggplot(heightweight, aes(x = ageYear, y = heightIn, colour = sex)) + 
         geom_point(aes(size = weightLb)) + scale_size_continuous(range = c(1, 4))
 hw
@@ -1638,7 +1608,7 @@ ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot() +
 library(gcookbook)
 p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
 p + scale_fill_discrete(labels = c("Control", "Treatment 1", "Treatment 2")) # x軸必須透過scale_x_discrete()來改變
-
+# 注意！！！start, end代表顏色的range
 p + scale_fill_grey(start = .5, end = 1, labels = c("Control", "Treatment 1", "Treatment 2"))
 
 p + scale_fill_discrete(limits = c("trt1", "trt2", "ctrl"),
@@ -1647,6 +1617,7 @@ p + scale_fill_discrete(limits = c("trt1", "trt2", "ctrl"),
 p <- ggplot(heightweight, aes(x = ageYear, y = heightIn, shape = sex, colour = sex)) + 
         geom_point()
 p
+# 注意！！！
 p + scale_shape_discrete(labels = c("Female", "Male")) # 一個變量映射兩個圖形屬性，要同時修改兩種屬性的標籤
 
 p + scale_shape_discrete(labels = c("Female", "Male")) + 
@@ -1662,12 +1633,12 @@ p + guides(fill = guide_legend(label.theme = element_text(face = "italic", famil
 # somehow, it doesn't work!
 
 
-## 10.10 使用含多行文本的標籤 =====
+## 10.10 使用含多行文本的標籤 \n =====
 
 p <- ggplot(PlantGrowth, aes(x = group, y = weight, fill = group)) + geom_boxplot()
-
+# 注意！！！
 p + scale_fill_discrete(labels = c("Control", "Type 1\ntreatment", "Type 2\ntreatment"))
-
+# 注意！！！legend.key.height
 library(grid) # 使用unit()增加圖例說明的高度
 p + scale_fill_discrete(labels = c("Control", "Type 1\ntreatment", "Type 2\ntreatment")) + 
         theme(legend.text = element_text(lineheight = .8), 
@@ -1689,9 +1660,9 @@ p + facet_wrap(~ class, ncol = 4)
 
 
 ## 11.2 在不同座標軸下使用分面 =====
-
+# 注意！！！
 p <- ggplot(mpg, aes(x = displ, y = hwy)) + geom_point()
-p + facet_grid(drv ~ cyl, scale = "free_y") # y軸刻度範圍各自不同
+p + facet_grid(drv ~ cyl, scales = "free_y") # y軸刻度範圍各自不同
 p + facet_grid(drv ~ cyl, scales = "free") # 兩軸都自由
 
 
@@ -1699,15 +1670,14 @@ p + facet_grid(drv ~ cyl, scales = "free") # 兩軸都自由
 
 mpg2 <- mpg
 mpg2$drv <- factor(mpg2$drv)
+# 注意！！！
 levels(mpg2$drv)[levels(mpg2$drv) == "4"] <- "4wd"
 levels(mpg2$drv)[levels(mpg2$drv) == "f"] <- "Front"
 levels(mpg2$drv)[levels(mpg2$drv) == "r"] <- "Rear"
 ggplot(mpg2, aes(x = displ, y = hwy)) + geom_point() + facet_grid(drv ~ .)
 
-
 ggplot(mpg2, aes(x = displ, y = hwy)) + geom_point() + 
         facet_grid(drv ~ ., labeller = label_both) # facet_wrap()無法
-
 
 mpg3 <- mpg
 mpg3$drv <- factor(mpg3$drv)
@@ -1825,7 +1795,7 @@ ggplot(cb, aes(x = Year, y = Anomaly10y)) +
         geom_area(aes(fill = valence)) +
         geom_line() + 
         geom_hline(yintercept = 0)
-
+# 注意！！！
 interp <- approx(cb$Year, cb$Anomaly10y, n = 1000) # 改善0附近的凌亂陰影
 
 cbi <- data.frame(Year = interp$x, Anomaly10y = interp$y)
@@ -1846,9 +1816,9 @@ ggplot(cbi, aes(x = Year, y = Anomaly10y)) +
 mcor <- cor(mtcars)
 round(mcor, digits = 2)
 # install.packages("corrplot")
+# 注意！！！
 library(corrplot)
 corrplot(mcor)
-
 corrplot(mcor, method = "shade", shade.col = NA, tl.col = "black", tl.srt = 45)
 
 col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
@@ -1877,9 +1847,9 @@ dnorm_limit <- function(x) {
         return(y)
 }
 p <- ggplot(data.frame(x = c(-3, 3)), aes(x = x))
-p + stat_function(fun = dnorm_limit, geom = "area", fill = "blue", alpha = .2) + 
-        stat_function(fun = dnorm)
-
+p + stat_function(fun = dnorm_limit, geom = "area", fill = "blue", alpha = .2) +  # 畫陰影
+        stat_function(fun = dnorm) # 畫線
+# 注意！！！
 # 這是一個「製造函數的函數」！
 limitRange <- function(fun, min, max) {
         function(x) { 
@@ -1968,6 +1938,7 @@ pres_rating <- data.frame(
 )
 pres_rating
 library(ggplot2)
+# 注意！！！
 p <- ggplot(pres_rating, aes(x = year, y = quarter, fill = rating))
 p + geom_tile() # 遺失值會用灰色代替
 p + geom_raster() # 效率較高
@@ -2394,7 +2365,7 @@ heightweight
 str(heightweight)
 
 
-# 15.1 創建 data.frame =====
+## 15.1 創建 data.frame =====
 
 g <- c("A", "B", "C")
 x <- 1:3
@@ -2405,10 +2376,384 @@ lst <- list(group = g, value = x)
 dat <- as.data.frame(lst)
 
 
-# 15.2 從數據框中提取訊息 =====
+## 15.2 從數據框中提取訊息 =====
+
+str(ToothGrowth)
+tg <- ToothGrowth
+tg$supp <- as.character(tg$supp)
+str(tg)
+ToothGrowth$supp
+tg$supp
 
 
-# 15.2 提取資料
+## 15.3 向數據框添加欄位 =====
+
+data$newcol <- NA
+data$newcol <- vector()
+
+
+## 15.4 從數據框中刪除一欄 =====
+
+data$badcol <- NULL
+data <- subset(data, select = -badcol)
+data <- subset(data, select = c(-badcol, -othercol))
+
+
+## 15.5 重命名數據框欄位名稱 =====
+
+names(dat) <- c("name1", "name2", "name3")
+library(gcookbook)
+names(anthoming)
+names(anthoming)[names(anthoming) == "ctrl"] <- c("Control")
+names(anthoming)[names(anthoming) == "expt"] <- c("Experimental")
+names(anthoming)
+
+names(anthoming)[1] <- "Angle")
+names(anthoming)
+
+
+## 15.6 重排序數據框的欄位 =====
+
+dat <- dat[c(1, 3, 2)]
+dat <- dat[c("col1", "col3", "col2")]
+library(gcookbook)
+anthoming
+anthoming[c(1, 3, 2)]
+anthoming[, c(1, 3, 2)]
+anthoming[3]
+anthoming[, 3]
+anthoming[, 3, drop = FALSE]
+# 注意！！！
+class(anthoming[, 3]) # vector
+class(anthoming[, 3, drop = FALSE]) # data.frame
+
+
+## 15.7 從數據框提取子集 =====
+
+library(gcookbook)
+climate
+subset(climate, Source == "Berkeley", select = c(Year, Anomaly10y))
+subset(climate, Source == "Berkeley" & Year >= 1900 & Year <= 2000, 
+       select = c(Year, Anomaly10y))
+climate[climate$Source == "Berkeley" & climate$Year >= 1900 & climate$Year <= 2000, 
+        c("Year", "Anomaly10y")]
+climate[climate$Source == "Berkeley" & climate$Year >= 1900 & climate$Year <= 2000,
+        c("Year", "Anomaly10y"), drop = FALSE]
+climate[1:100, c(2, 5)]
+
+# 注意！！！盡可能使用名稱做index
+
+
+## 15.8 改變因子水平的順序 =====
+
+sizes <- factor(c("small", "large", "large", "small", "medium"))
+sizes # 注意！！！default情況因子是照字母排序
+
+# 注意！！！
+sizes <- factor(sizes, levels = c("small", "medium", "large"))
+sizes
+
+factor(sizes, levels = rev(levels(sizes))) # 顛倒因子順序
+
+
+## 15.9 根據數據的值改變因子水平的順序 =====
+
+# 注意！！！這超神！！！
+iss <- InsectSprays
+iss$spray
+iss$spray <- reorder(iss$spray, iss$count, FUN = mean)
+iss$spray
+
+
+## 15.10 改變因子水平的名稱 =====
+library(plyr)
+sizes <- factor(c("small", "large", "large", "small", "medium"))
+sizes
+levels(sizes)
+sizes1 <- revalue(sizes, c(small = "S", medium = "M", large = "L"))
+sizes1
+revalue(sizes, c("small" = "S", "medium" = "M", "large" = "L")) # 若原因子名稱中有空格等特殊字符會很有用！！！
+# 注意！！！
+mapvalues(sizes, c("small", "medium", "large"), c("S", "M", "L"))
+
+
+sizes <- factor(c("small", "large", "large", "small", "medium"))
+levels(sizes)[levels(sizes) == "large"] <- "L" # 這種方法可以單改一個factor的名稱
+levels(sizes)[levels(sizes) == "medium"] <- "M"
+levels(sizes)[levels(sizes) == "small"] <- "S"
+sizes
+
+sizes <- factor(c("small", "large", "large", "small", "medium"))
+levels(sizes) <- list(S = "small", M = "medium", L = "large")
+sizes
+
+sizes <- factor(c("small", "large", "large", "small", "medium"))
+levels(sizes)[1] <- "L" # 盡量不要使用位置的方式來改，用名稱來改比較不會出錯
+sizes
+
+levels(sizes) <- c("L", "M", "S")
+sizes
+
+
+## 15.11 去掉因子中不再使用的水平 =====
+
+sizes <- factor(c("small", "large", "large", "small", "medium"))
+sizes <- sizes[1:3] # medium沒用到了
+sizes
+# 注意！！！
+sizes <- droplevels(sizes)
+sizes
+
+
+## 15.12 在字符向量中改變元素的名稱 =====
+
+sizes <- c("small", "large", "large", "small", "medium")
+sizes
+
+sizes1 <- revalue(sizes, c(small = "S", medium = "M", large = "L"))
+sizes1
+
+revalue(sizes, c("small" = "S", "medium" = "M", "large" = "L"))
+mapvalues(sizes, c("small", "medium", "large"), c("S", "M", "L"))
+
+sizes <- c("small", "large", "large", "small", "medium")
+sizes
+sizes[sizes == "small"] <- "S"
+sizes[sizes == "medium"] <- "M"
+sizes[sizes == "large"] <- "L"
+sizes
+
+
+## 15.13 把一個分類變量轉化成另一個分類變量 =====
+
+pg <- PlantGrowth[c(1, 2, 11, 21, 22), ]
+pg
+# 注意！！！有點難
+oldvals <- c("ctrl", "trt1", "trt2")
+newvals <- factor(c("No", "Yes", "Yes"))
+pg$treatment <- newvals[match(pg$group, oldvals)]
+
+pg <- PlantGrowth[c(1, 2, 11, 21, 22), ]
+pg
+pg$treatment[pg$group == "ctrl"] <- "no"
+pg$treatment[pg$group == "trt1"] <- "yes"
+pg$treatment[pg$group == "trt2"] <- "yes"
+class(pg$treatment)
+pg$treatment <- factor(pg$treatment)
+pg
+
+pg$weightcat[pg$group == "ctrl" & pg$weight < 5] <- "no_small"
+pg$weightcat[pg$group == "ctrl" & pg$weight >= 5] <- "no_large"
+pg$weightcat[pg$group == "trt1"] <- "yes"
+pg$weightcat[pg$group == "trt2"] <- "yes"
+pg$weightcat <- factor(pg$newcol)
+pg
+
+# 注意！！！
+pg$weighttrt <- interaction(pg$weightcat, pg$treatment)
+pg
+
+
+## 15.14 連續變量轉變為分類變量 =====
+
+pg <- PlantGrowth[c(1, 2, 11, 21, 22), ]
+pg
+pg$wtclass<- cut(pg$weight, breaks = c(0, 5, 6, Inf)) # default為左開右閉，意即不包含最小值
+pg
+# 注意！！！
+cut(pg$weight, breaks = c(0, 5, 6, Inf), right = FALSE)
+
+
+## 15.15 變量轉換 =====
+
+library(gcookbook)
+hw <- heightweight
+hw
+hw$heightCm <- hw$heightIn * 2.54
+hw
+
+hw <- transform(hw, heightCm = heightIn * 2.54, weightKg = weightLb / 2.204)
+library(plyr)
+# 注意！！！
+hw <- mutate(hw, heightCm = heightIn * 2.54, weightKg = weightLb / 2.204)
+hw
+
+hw <- transform(hw, bmi = weightKg / (heightCm / 100) ^ 2)
+hw <- mutate(hw, bmi = weightKg / (heightCm / 100) ^ 2)
+hw$bmi <- hw$weightKg / (hw$heightCm / 100) ^ 2
+hw
+
+
+## 15.16 按組轉換數據 =====
+
+library(MASS)
+library(plyr)
+# 注意！！！
+cb <- ddply(cabbages, "Cult", transform, DevWt = HeadWt - mean(HeadWt))
+cabbages
+transform(cabbages, DevWt = HeadWt - mean(HeadWt))
+
+library(plyr)
+cb <- ddply(cabbages, "Cult", transform, DevWt = HeadWt - mean(HeadWt)) # 對各組做標準化
+cb
+
+
+ggplot(cb, aes(x = Cult, y = HeadWt)) + geom_boxplot()
+ggplot(cb, aes(x = Cult, y = DevWt)) + geom_boxplot()
+
+# 注意！！！可以一次多組
+ddply(cabbages, c("Cult", "Date"), transform, DevWt = HeadWt - mean(HeadWt), 
+      DevVitC = VitC - mean(VitC))
+
+
+## 15.17 分組匯總數據 =====
+
+library(MASS)
+library(plyr)
+ddply(cabbages, c("Cult", "Date"), summarise, Weight = mean(HeadWt), VitC = mean(VitC))
+cabbages
+
+library(plyr)
+summarise(cabbages, Weight = mean(HeadWt))
+
+ddply(cabbages, "Cult", summarise, Weight = mean(HeadWt))
+ddply(cabbages, c("Cult", "Date"), summarise, Weight = mean(HeadWt),
+      sd = sd(HeadWt),
+      n = length(HeadWt))
+
+# 處理遺失值
+c1 <- cabbages
+c1$HeadWt[c(1, 20, 45)] <- NA
+ddply(c1, c("Cult", "Date"), summarise, Weight = mean(HeadWt),
+      sd = sd(HeadWt), 
+      n = length(HeadWt))
+ddply(c1, c("Cult", "Date"), summarise, Weight = mean(HeadWt, na.rm = TRUE),
+            sd = sd(HeadWt, na.rm = TRUE),
+            n = sum(!is.na(HeadWt)))
+
+c2 <- subset(c1, !(Cult == "c52" & Date == "d21"))
+c2a <- ddply(c2, c("Cult", "Date"), summarise, 
+             Weight = mean(HeadWt, na.rm = TRUE), 
+             sd = sd(HeadWt, na.rm = TRUE), 
+             n = sum(!is.na(HeadWt)))
+c2a
+
+ggplot(c2a, aes(x = Date, fill = Cult, y = Weight)) + 
+        geom_bar(position = "dodge", stat = "identity")
+
+# 注意！！！.drop
+c2b <- ddply(c2, c("Cult", "Date"), .drop = FALSE, summarise,
+             Weight = mean(HeadWt, na.rm = TRUE),
+             sd = sd(HeadWt, na.rm = TRUE),
+             n = sum(!is.na(HeadWt)))
+c2b
+ggplot(c2b, aes(x = Date, fill = Cult, y = Weight)) + geom_bar(position = "dodge", stat = "identity")
+
+
+## 15.18 使用標準誤差和信賴區間來匯總數據 =====
+
+library(MASS)
+library(plyr)
+ca <- ddply(cabbages, c("Cult", "Date"), summarise, 
+            Weight = mean(HeadWt, na.rm = TRUE),
+            sd = sd(HeadWt, na.rm = TRUE),
+            n = sum(!is.na(HeadWt)),
+            se = sd / sqrt(n))
+ca
+
+ddply(cabbages, c("Cult", "Date"), summarise,
+      Weight = mean(HeadWt, na.rm = TRUE),
+      sd = sd(HeadWt, na.rm = TRUE),
+      n = sum(!is.na(HeadWt)),
+      se = sd / sqrt(n))
+
+ciMult <- qt(.975, ca$n - 1)
+ciMult
+ca$ci <- ca$se * ciMult
+
+ca$ci95 <- ca$se * qt(.975, ca$n)
+
+summarySE <- function(data = NULL, measurevar, groupvars = NULL,
+                      conf.interval = .95, na.rm = FALSE, .drop = TRUE) {
+        require(plyr)
+        length2 <- function(x, na.rm = FALSE) {
+                if (na.rm) sum(!is.na(x))
+                else length(x)
+        }
+        
+        # 匯總
+        datac <- ddply(data, groupvars, .drop = .drop,
+                       .fun = function(xx, col, na.rm) {
+                               c(n = length2(xx[, col], na.rm = na.rm),
+                                 mean = mean(xx[, col], na.rm = na.rm),
+                                 sd = sd(xx[, col], na.rm = na.rm))
+                       }, 
+                       measurevar,
+                       na.rm)
+        # 注意！！！
+        datac <- rename(datac, c("mean" = measurevar))
+        datac$se <- datac$sd / sqrt(datac$n)
+        ciMult <- qt(conf.interval / 2 + .5, datac$n-1)
+        datac$ci <- datac$se * ciMult
+        return(datac)
+}
+
+c2 <- subset(cabbages, !(Cult == "c52" & Date == "d21"))
+c2$HeadWt[c(1, 20, 45)] <- NA
+summarySE(c2, "HeadWt", c("Cult", "Date"), conf.interval = .99,
+          na.rm = TRUE, .drop = FALSE)
+
+
+## 15.19 把數據框從寬變長 =====
+
+library(gcookbook)
+anthoming
+library(reshape2)
+melt(anthoming, id.vars = "angle", variable.name = "condition", value.name = "count")
+
+drunk
+melt(drunk, id.vars = "sex", measure.vars = c("0-29", "30-39"), variable.name = "name", value.name = "count")
+
+plum_wide
+# 注意！！！measure.vars的default設定為id.vars「以外的所有」變量
+melt(plum_wide, id.vars = c("length", "time"), variable.name = "survival", value.name = "count")
+
+co <- corneas
+co # 注意！！！沒有id.vars的資料集可以自己加入id.vars
+
+co$id <- 1:nrow(co)
+melt(co, id.vars = "id", variable.name = "eye", value.name = "thickness")
+# 注意！！！用數值作為id.vars可能會給後續分析造成問題，建議轉成character或factor
+
+
+## 15.20 把數據框從長變寬 =====
+
+library(gcookbook)
+plum
+library(reshape2)
+dcast(plum, length + time ~ survival, value.var = "count")
+
+
+## 15.21 把時間序列數據對象拆分成時間和數據 =====
+
+nhtemp
+class(nhtemp) # ts
+as.numeric(time(nhtemp))
+as.numeric(nhtemp)
+nht <- data.frame(year = as.numeric(time(nhtemp)), temp = as.numeric(nhtemp))
+nht
+
+presidents
+pres_rating <- data.frame(
+        year = as.numeric(time(presidents)), 
+        rating = as.numeric(presidents)
+)
+# 注意！！！
+pres_rating2 <- data.frame(
+        year = as.numeric(floor(time(presidents))),
+        quarter = as.numeric(cycle(presidents)),
+        rating = as.numeric(presidents)
+)
 
 
 # 實用R程式設計 ==================================================
@@ -2792,3 +3137,55 @@ library(nlme)
 pig.growth <- groupedData(weight ~ num.weeks | id.num, data = pig.weights)
 class(pig.growth)
 plot(pig.growth, pch = 16)
+
+
+# R bloggers =====
+
+# ggExtra =====
+# An awesome RStudio addin for selecting colours, and another for adding marginal density plots to ggplot2
+# https://www.r-bloggers.com/an-awesome-rstudio-addin-for-selecting-colours-and-another-for-adding-marginal-density-plots-to-ggplot2/
+# install.packages("ggExtra")
+library(ggExtra)
+myplot <- ggplot(mtcars, aes(wt, mpg)) + geom_point()
+mynewplot <- ggMarginalGadget(myplot)
+
+
+# ggrepel =====
+# Avoid overlapping labels in ggplot2 charts
+# https://cran.r-project.org/web/packages/ggrepel/vignettes/ggrepel.html
+# install.packages("ggrepel")
+library(ggrepel)
+set.seed(42)
+ggplot(mtcars) +
+        geom_point(aes(wt, mpg), color = 'red') +
+        geom_text_repel(aes(wt, mpg, label = rownames(mtcars))) +
+        theme_classic(base_size = 16)
+
+set.seed(42)
+ggplot(mtcars) +
+        geom_point(aes(wt, mpg), size = 5, color = 'grey') +
+        geom_label_repel(
+                aes(wt, mpg, fill = factor(cyl), label = rownames(mtcars)),
+                fontface = 'bold', color = 'white',
+                box.padding = unit(0.35, "lines"),
+                point.padding = unit(0.5, "lines"),
+                segment.color = 'grey50'
+        ) +
+        theme_classic(base_size = 16)
+
+
+# 魚骨圖 Fishbone Diagram =====
+
+# install.packages("qcc")
+library(qcc)
+cause.and.effect(
+        cause = list(
+                INGREDIENTS = c("Coffee", "Sugar", "Water"), 
+                PEOPLE = c("You"),
+                ENERGY = c("Gas"), 
+                TOOLS = c("Spoon", "Cooker", "Cup")
+                ), 
+        effect = "A cup of coffee", 
+        title = "Fishbone chart for a cup of coffee"
+)
+
