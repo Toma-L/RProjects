@@ -1322,7 +1322,8 @@ ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot()
 ggplot(PlantGrowth, aes(x = group, y = weight)) + 
         geom_boxplot() + 
         scale_y_continuous(breaks = c(4, 4.25, 4.5, 5, 6, 8))
-ggplot(PlantGrowth, aes(x = group, y = weight)) + geom_boxplot() + 
+ggplot(PlantGrowth, aes(x = group, y = weight)) + 
+        geom_boxplot() + 
         scale_x_discrete(limits = c("trt2", "ctrl"), breaks = "ctrl") # 用limits篩選組別
 
 
@@ -2481,7 +2482,7 @@ ggsave("myplot.pdf", width = 4, height = 4)
 embed_fonts("myplot.pdf")
 
 
-## 14.7 在Windows的點陣貨螢幕輸出中使用字體 =====
+## 14.7 在Windows的點陣或螢幕輸出中使用字體 =====
 
 # install.packages("extrafont")
 library(extrafont)
