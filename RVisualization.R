@@ -1,7 +1,9 @@
 # Data Visualization in R
+
 # integrator: Akihiro H.
 
-# R Graphics Cookbook =====
+
+# R Graphics Cookbook ================================================================
 
 # 1. R 基礎 =====
 

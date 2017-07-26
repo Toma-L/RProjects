@@ -1,6 +1,6 @@
 #利用R語言打通大數據的經脈==========
 
-install.packages("e1071")
+# install.packages("e1071")
 library(e1071)
 
 data(iris)

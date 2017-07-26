@@ -3,7 +3,7 @@
 ##倒傳遞類神經網路==================================================
 
 library(MASS)
-install.packages("RSNNS")
+# install.packages("RSNNS")
 library(RSNNS)
 data(Pima.tr)
 set.seed(1111)

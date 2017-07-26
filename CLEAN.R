@@ -777,3 +777,230 @@ bmi_wide <- spread(bmi_long, year, bmi_val)
 
 bmi_cc_clean <- separate(bmi_cc, col = Country_ISO, into = c("Country", "ISO"), sep = "/")
 bmi_cc <- unite(bmi_cc_clean, Country_ISO, Country, ISO, sep = "-")
+
+
+# 輕鬆學習R語言 =============================================================
+
+# install.packages("tidyverse")
+library(tidyverse)
+cars %>% summary
+
+sys_date <- Sys.Date()
+sys_date_yr <- format(sys_date, format = "%Y")
+sys_date_num <- as.numeric(sys_date_yr)
+sys_date_num
+
+sys_date_num <- as.numeric(format(Sys.Date(), format = "%Y"))
+sys_date_num
+
+sys_date_num <- Sys.Date() %>%
+        format(format = "%Y") %>%
+        as.numeric()
+sys_date_num
+
+
+beyond_start <- 1983
+beyond_yr <- Sys.Date() %>%
+        format(format = "%Y") %>%
+        as.numeric() %>%
+        `-` (beyond_start) # `` : tilt
+beyond_yr
+
+
+cars_lm <- lm(formula = dist ~ speed, data = cars)
+cars_lm <- cars %>%
+        lm(formula = dist ~ speed, data = .) # 用 . 來標示資料位置
+
+
+team_name <- c("Chicago Bulls", "Golden State Warriors")
+wins <- c(72, 73)
+losses <- c(10, 9)
+great_nba_teams <- data.frame(team_name, wins, losses)
+great_nba_teams
+
+great_nba_teams <- data.frame(team_name, wins, losses)
+great_nba_teams$winning_percentage <- great_nba_teams$wins / (great_nba_teams$wins + great_nba_teams$losses)
+great_nba_teams
+
+library(tidyr)
+great_nba_teams <- data.frame(team_name, wins, losses)
+great_nba_teams
+gather(great_nba_teams, key = variable_names, value = values, wins, losses)
+
+
+long_format <- gather(great_nba_teams, key = variable_names, value = values, wins, losses)
+long_format
+spread(long_format, key = variable_names, value = values)
+
+
+
+library(tidyverse)
+name <- c("蒙其·D·魯夫", "羅羅亞·索隆", "娜美", "騙人布", "賓什莫克·香吉士", "多尼多尼·喬巴", "妮可·羅賓", "佛朗基", "布魯克")
+gender <- c("男", "男", "女", "男", "男", "男", "女", "男", "男")
+age <- c(19, 21, 20, 19, 21, 17, 30, 36, 90)
+straw_hat_df <- data.frame(name, gender, age, stringsAsFactors = FALSE)
+filter(straw_hat_df, gender == "女")
+
+name <- c("蒙其·D·魯夫", "羅羅亞·索隆", "娜美", "騙人布", "賓什莫克·香吉士", "多尼多尼·喬巴", "妮可·羅賓", "佛朗基", "布魯克")
+gender <- c("男", "男", "女", "男", "男", "男", "女", "男", "男")
+age <- c(19, 21, 20, 19, 21, 17, 30, 36, 90)
+straw_hat_df <- data.frame(name, gender, age, stringsAsFactors = FALSE)
+straw_hat_df[straw_hat_df$gender == "女", ]
+
+
+filter(straw_hat_df, gender == "男" & age > 30)
+
+name <- c("蒙其·D·魯夫", "羅羅亞·索隆", "娜美", "騙人布", "賓什莫克·香吉士", "多尼多尼·喬巴", "妮可·羅賓", "佛朗基", "布魯克")
+gender <- c("男", "男", "女", "男", "男", "男", "女", "男", "男")
+age <- c(19, 21, 20, 19, 21, 17, 30, 36, 90)
+straw_hat_df <- data.frame(name, gender, age, stringsAsFactors = FALSE)
+straw_hat_df[(straw_hat_df$gender == "男") & (straw_hat_df$age > 30), ]
+
+select(straw_hat_df, name)
+select(straw_hat_df, name) %>% class
+straw_hat_df[, "name"] %>% class
+straw_hat_df[, "name", drop = FALSE] %>% class
+
+select(straw_hat_df, crew_name = name, crew_age = age) # select過程可以重新命名
+
+
+team_name <- c("Chicago Bulls", "Golden State Warriors")
+wins <- c(72, 73)
+losses <- c(10, 9)
+season <- c("1995-96", "2015-16")
+great_nba_teams <- data.frame(team_name, wins, losses, stringsAsFactors = FALSE)
+great_nba_teams
+mutate(great_nba_teams,
+       winning_percentage = wins / (wins + losses),
+       season = season)
+
+arrange(straw_hat_df, age)
+arrange(straw_hat_df, desc(age))
+
+summarise(straw_hat_df, mean_age = mean(age))
+
+
+library(tidyverse)
+name <- c("蒙其·D·魯夫", "羅羅亞·索隆", "娜美", "騙人布", "賓什莫克·香吉士", "多尼多尼·喬巴", "妮可·羅賓", "佛朗基", "布魯克")
+gender <- c("男", "男", "女", "男", "男", "男", "女", "男", "男")
+age <- c(19, 21, 20, 19, 21, 17, 30, 36, 90)
+straw_hat_df <- data.frame(name, gender, age, stringsAsFactors = FALSE)
+group_by(straw_hat_df, gender) %>%
+        dplyr::summarise(mean_age = mean(age)) %>%
+        as.data.frame() # 不可使用plyr套件的summarise()
+
+
+
+heights <- runif(500000) * 50 + 140
+weights <- runif(500000) * 50 + 40
+h_w_df <- data.frame(heights, weights)
+
+heights <- ceiling(runif(500000) * 50) + 140
+weights <- ceiling(runif(500000) * 50) + 40
+h_w_df <- data.frame(heights, weights)
+bmi <- rep(NA, times = nrow(h_w_df))
+for (i in 1:nrow(h_w_df)){
+        bmi[i] <- h_w_df[i, "weights"] / (h_w_df[i, "heights"] / 100)^2
+}
+
+heights <- ceiling(runif(500000) * 50) + 140
+weights <- ceiling(runif(500000) * 50) + 40
+h_w_df <- data.frame(heights, weights)
+bmi <- h_w_df$weights / (h_w_df$heights / 100) ^ 2 # 省時作法
+
+system.time(bmi <- h_w_df$weights / (h_w_df$heights / 100) ^ 2)
+
+# 向量計算優先於迴圈
+# 向量之後，考慮apply
+
+distinct_counts <- function(x){
+        unique_values <- unique(x)
+        return(length(unique_values))
+}
+apply(iris, MARGIN = 2, distinct_counts)
+lapply(iris, FUN = distinct_counts)
+sapply(iris, FUN = distinct_counts)
+tapply(iris$Petal.Length, INDEX = iris$Species, FUN = distinct_counts) # tapply加入了table功能
+
+
+iris[1, "Species"]
+filter <- (iris$Petal.Length >= 6) & (iris$Sepal.Length >= 7.5)
+iris[filter, c("Sepal.Length", "Petal.Length", "Species")]
+
+
+team_name <- c("Chicago Bulls", "Golden State Warriors")
+wins <- c(72, 73)
+losses <- c(10, 9)
+is_champion <- c(TRUE, FALSE)
+# 既有的資料框
+great_nba_teams <- data.frame(team_name, wins, losses, is_champion)
+# 刪除變數
+great_nba_teams$is_champion <- NULL
+great_nba_teams
+
+
+
+team_name <- c("Chicago Bulls", "Golden State Warriors")
+wins <- c(72, 73)
+losses <- c(10, 9)
+is_champion <- c(TRUE, FALSE)
+season <- c("1995-96", "2015-16")
+# 既有資料框，文字的變數被記錄為因素向量
+great_nba_teams <- data.frame(team_name, wins, losses, is_champion, season)
+# 新增觀測值
+lakers_7172 <- c("Los Angeles Lakers", 69, 13, TRUE, "1971-72")
+great_nba_teams <- rbind(great_nba_teams, lakers_7172)
+
+
+great_nba_teams <- data.frame(team_name, wins, losses, is_champion, season, 
+                              stringsAsFactors = FALSE)
+# 新增觀測值
+lakers_7172 <- c("Los Angeles Lakers", 69, 13, TRUE, "1971-72")
+great_nba_teams <- rbind(great_nba_teams, lakers_7172)
+great_nba_teams
+
+
+
+name <- c("蒙其·D·魯夫", "羅羅亞·索隆", "娜美", "騙人布", "賓什莫克·香吉士", "多尼多尼·喬巴", "妮可·羅賓", "佛朗基", "布魯克")
+age <- c(19, 21, 20, 19, 21, 17, 30, 36, 90)
+straw_hat_df <- data.frame(name, age)
+# 將 straw_hat_df$age 重新編碼
+straw_hat_df$age_category <- cut(straw_hat_df$age, breaks = c(0, 20, 30, Inf), labels = c("20 歲以下", "超過 20 歲但 30 歲以下", "超過 30 歲"))
+straw_hat_df
+
+
+name <- c("蒙其·D·魯夫", "羅羅亞·索隆", "娜美", "多尼多尼·喬巴")
+age <- c(19, 21, 20, 17)
+left_df <- data.frame(name, age)
+# 右邊的資料框
+name <- c("蒙其·D·魯夫", "多尼多尼·喬巴", "妮可·羅賓")
+devil_fruit <- c("橡膠果實", "人人果實", "花花果實")
+right_df <- data.frame(name, devil_fruit)
+# 合併後的資料框
+merged_df <- merge(left_df, right_df)
+merged_df
+
+merged_df <- merge(left_df, right_df, all.x = TRUE)
+merged_df
+
+merged_df <- merge(left_df, right_df, all.y = TRUE)
+merged_df
+
+merged_df <- merge(left_df, right_df, all.x = TRUE, all.y = TRUE)
+merged_df
+
+
+
+name <- c("蒙其·D·魯夫", "羅羅亞·索隆", "娜美", "多尼多尼·喬巴")
+age <- c(19, 21, 20, 17)
+left_df <- data.frame(name, age)
+# 右邊的資料框
+character <- c("蒙其·D·魯夫", "多尼多尼·喬巴", "妮可·羅賓")
+devil_fruit <- c("橡膠果實", "人人果實", "花花果實")
+right_df <- data.frame(character, devil_fruit)
+# 合併後的資料框
+merged_df <- merge(left_df, right_df)
+merged_df # Cartesian Join
+
+merged_df <- merge(left_df, right_df, by.x = "name", by.y = "character")
+merged_df

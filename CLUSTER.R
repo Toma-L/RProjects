@@ -99,7 +99,7 @@ legend(countries$birth[J], countries$death[J], "JAPAN", bty = "n", xjust = .5, c
 legend(countries$birth[M], countries$death[M], countries$country[M], bty = "n", xjust = 1, cex = .8)
 
 
-##K-平均值分群==================================================
+## K-平均值分群 ==================================================
 
 fit_km1 <- kmeans(countries[, -1], center = 3)
 print(fit_km1)
@@ -203,6 +203,7 @@ for(i in 3:5) {
 #期望值最大分群==================================================
 
 library(mclust)
+countries
 fit_EM <- Mclust(countries[, -1])
 summary(fit_EM, parameters = TRUE)
 countries_BIC <- mclustBIC(countries[, -1])
