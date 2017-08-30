@@ -1,9 +1,11 @@
 # Data Visualization in R
 
-# integrator: Akihiro H.
+# Thomas JH Lin / Akihiro Hayashi / 임소홍
 
 
-# R Graphics Cookbook ================================================================
+# R Graphics Cookbook ==================================================
+
+library(ggplot2)
 
 # 1. R 基礎 =====
 
@@ -11,27 +13,25 @@
 
 ## 2.1 散佈圖 geom_point() =====
 
-library(ggplot2)
 qplot(mtcars$wt, mtcars$mpg)
 qplot(wt, mpg, data = mtcars)
 ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point()
 
 
+
 ## 2.2 折線圖 geom_line() =====
 
-plot(pressure$temperature, pressure$pressure, type = "l")
-
-plot(pressure$temperature, pressure$pressure, type = "l")
+plot(pressure$temperature, pressure$pressure, type = "l") # 先plot()再加東西
 points(pressure$temperature, pressure$pressure) # 記得是point"s"
-lines(pressure$temperature, pressure$pressure/2, col = "red")
-points(pressure$temperature, pressure$pressure/2, col = "red")
+lines(pressure$temperature, pressure$pressure / 2, col = "red")
+points(pressure$temperature, pressure$pressure / 2, col = "red")
 
-library(ggplot2)
 qplot(pressure$temperature, pressure$pressure, geom = "line") # geom = 
 qplot(temperature, pressure, data = pressure, geom = "line") # 方法2
 ggplot(pressure, aes(x = temperature, y = pressure)) + geom_line() #方法3
 
-qplot(temperature, pressure, data = pressure, geom = c("line", "point"))
+qplot(temperature, pressure, data = pressure, geom = c("line", "point")) # 一次寫完
+
 
 
 ## 2.3 長條圖 geom_bar() =====
@@ -40,11 +40,11 @@ barplot(BOD$demand, names.arg = BOD$Time)
 
 barplot(table(mtcars$cyl))
 
-library(ggplot2)
 # qplot(BOD$Time, BOD$demand, geom = "bar", stat = "identity") # Error
 # qplot(factor(BOD$Time), BOD$demand, geom = "bar", stat = "identity") # Error
 
 qplot(mtcars$cyl)
+class(mtcars$cyl)
 qplot(factor(mtcars$cyl))
 # qplot(Time, demand, data = BOD, geom = "bar", stat = "identity") # Error
 ggplot(BOD, aes(x = Time, y = demand)) + geom_bar(stat = "identity")
@@ -53,15 +53,16 @@ qplot(factor(cyl), data = mtcars)
 ggplot(mtcars, aes(x = factor(cyl))) + geom_bar()
 
 
+
 ## 2.4 直方圖 geom_histogram(binwidth) =====
 
 hist(mtcars$mpg)
 hist(mtcars$mpg, breaks = 10)
 
 qplot(mtcars$mpg)
-library(ggplot2)
 qplot(mpg, data = mtcars, binwidth = 4) # binwidth
 ggplot(mtcars, aes(x = mpg)) + geom_histogram(binwidth = 4)
+
 
 
 ## 2.5 箱型圖 geom_boxplot(); interaction() =====
@@ -71,7 +72,6 @@ class(ToothGrowth$supp) # factor
 boxplot(len ~ supp, data = ToothGrowth)
 boxplot(len ~ supp + dose, data = ToothGrowth)
 
-library(ggplot2)
 qplot(ToothGrowth$supp, ToothGrowth$len, geom = "boxplot") # 方法2
 ggplot(ToothGrowth, aes(x = supp, y = len)) + geom_boxplot() # 方法3
 
@@ -1576,7 +1576,6 @@ p %+% mdnew + coord_polar() + ylim(0, max(md$deaths)) # 舊圖設定 %+% 新資�
 ## 9.1 設置圖形標題 ggtitle(); labs(title) =====
 
 library(gcookbook)
-library(ggplot2)
 p <- ggplot(heightweight, aes(x = ageYear, y = heightIn)) + geom_point()
 p + ggtitle("Age and Height of Schoolchildren")
 p + ggtitle("Age and Height\nof Schoolchildren")
@@ -2501,7 +2500,6 @@ loadfonts()
 
 # Sys.seteny(R_GSCMD = "C:/Program Files/gs/gs9.05/bin/gswin32c.exe")
 
-library(ggplot2)
 ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point() + 
         ggtitle("Title text goes here") + 
         theme(text = element_text(size = 16, family = "Impact"))
@@ -2519,7 +2517,6 @@ fonts()
 library(extrafont)
 loadfonts("win")
 
-library(ggplot2)
 ggplot(mtcars, aes(x = wt, y = mpg)) + geom_point() + 
         ggtitle("Title text goes here") + 
         theme(text = element_text(size = 16, family = "Georgia", face = "italic"))
@@ -2929,8 +2926,8 @@ time()
 
 # R資料採礦與數據分析 =====
 
-install.packages("RGtk2")
-install.packages("rattle")
+# install.packages("RGtk2")
+# install.packages("rattle")
 # install.packages("iClick")
 library(iClick)
 library(rattle)
@@ -3381,3 +3378,303 @@ draw.pairwise.venn(area1 = 22, area2 = 9, cross.area = 3, category = c("Dog Peop
 ?draw.pairwise.venn
 
 
+
+# DataCamp ==================================================
+
+## Data Visualization with ggplot2 (Part 3) =====
+
+## Refresher (1) -----
+# Create movies_small
+library(ggplot2movies)
+set.seed(123)
+movies_small <- movies[sample(nrow(movies), 1000), ]
+movies_small$rating <- factor(round(movies_small$rating))
+# Explore movies_small with str()
+str(movies_small)
+# Build a scatter plot with mean and 95% CI
+ggplot(movies_small, aes(x = rating, y = votes)) +
+        geom_point() +
+        stat_summary(fun.data = "mean_cl_normal",
+                     geom = "crossbar",
+                     width = 0.2,
+                     col = "red") + 
+        scale_y_log10()
+
+## Refresher (2) -----
+# Reproduce the plot
+ggplot(diamonds, aes(x = carat, y = price, col = color)) +
+        geom_point(alpha = 0.5, size = 0.5, shape = 16) +
+        scale_x_log10(expression(log[10](Carat)), limits = c(0.1, 10)) +
+        scale_y_log10(expression(log[10](Price)), limits = c(100, 100000)) +
+        scale_color_brewer(palette = "YlOrRd") +
+        coord_equal() +
+        theme_classic()
+
+
+## Transformations! -----
+# movies_small is available
+# Add a boxplot geom
+d <- ggplot(movies_small, aes(x = rating, y = votes)) +
+        geom_point() +
+        geom_boxplot() +
+        stat_summary(fun.data = "mean_cl_normal",
+                     geom = "crossbar",
+                     width = 0.2,
+                     col = "red")
+# Untransformed plot
+d
+# Transform the scale
+d + scale_y_log10()
+# Transform the coordinates
+d + coord_trans(y = "log10")
+
+
+
+
+
+# 輕鬆學習R語言 =============================================================
+
+# 探索資料分析 =====
+
+nrow(iris); ncol(iris)
+dim(iris)
+head(iris); tail(iris)
+summary(iris)
+str(iris) # structure
+
+hist(rnorm(1000))
+boxplot(Sepal.Length ~ Species, data = iris)
+
+
+x <- seq(from = as.Date("2017-01-01"), to = as.Date("2017-01-31"), by = 1)
+set.seed(123)
+y <- sample(1:100, size = 31, replace = TRUE)
+plot(x, y, type = "l", xaxt = "n")
+axis.Date(1, at = x, format = "%Y-%m-%d")
+
+
+class(AirPassengers)
+class(LakeHuron)
+plot(AirPassengers)
+plot(LakeHuron)
+
+
+plot(cars$speed, cars$dist)
+
+plot(iris)
+
+
+ice_cream_flavor <- rep(NA, times = 100)
+for (i in 1:100) {
+        ice_cream_flavor[i] <- sample(c("vanilla", "chocolate", "matcha", "other"), size = 1)
+}
+ice_cream_flavor
+table(ice_cream_flavor)
+barplot(table(ice_cream_flavor))
+
+
+curve(sin, from = -pi, to = pi)
+
+my_sqr <- function(x) {
+        return(x ^ 2)
+}
+curve(my_sqr, from = -3, to = 3)
+
+
+plot(cars, main = "Car speed vs. breaking distance", xlab = "Car speed(mph)", ylab = "Breaking distance(ft)")
+grid()
+
+
+barplot(table(ice_cream_flavor), horiz = TRUE, las = 1) # 0 ~ 3
+
+barplot(table(ice_cream_flavor), horiz = TRUE, las = 1, cex.name = 0.8, cex.axis = 1.2)
+# cex: character expansion factor
+
+norm_dist <- rnorm(1000)
+hist(norm_dist, freq = FALSE)
+lines(density(norm_dist))
+
+
+plot(cars, pch = 2, col = "red") # pch: plotting character
+
+
+iris_pch <- c(1, 2, 3)[as.numeric(iris$Species)]
+plot(iris$Sepal.Length, iris$Sepal.Width, col = iris$Species, pch = iris_pch)
+
+
+par(mfrow = c(2, 2)) # matrix of figures entered row-wise
+boxplot(iris$Sepal.Length ~ iris$Species, main = "Sepal length by species")
+boxplot(iris$Sepal.Width ~ iris$Species, main = "Sepal width by species")
+boxplot(iris$Petal.length ~ iris$Species, main = "Petal length by species")
+boxplot(iris$Petal.Width ~ iris$Species, main = "Petal width by species")
+
+
+
+# 探索資料分析2 =====
+
+library(ggplot2) # gg: grammer of graphics
+ggplot(cars, aes(x = speed, y = dist))
+
+ggplot(cars, aes(x = speed, y = dist)) + geom_point()
+
+set.seed(123)
+norm_nums <- rnorm(1000)
+hist_df <- data.frame(norm_nums = norm_nums)
+ggplot(hist_df, aes(x = norm_nums)) + geom_histogram()
+
+ggplot(hist_df, aes(x = norm_nums)) + geom_histogram(binwidth = 0.1)
+ggplot(hist_df, aes(x = norm_nums)) + geom_histogram(binwidth = 0.5)
+
+ggplot(iris, aes(x = Species, y = Sepal.Length)) + geom_boxplot()
+
+
+x <- seq(from = as.Date("2017-01-01"), to = as.Date("2017-01-31"), by = 1)
+set.seed(123)
+y <- sample(1:100, size = 31, replace = TRUE)
+line_df <- data.frame(x = x, y = y)
+ggplot(line_df, aes(x = x, y = y)) + geom_line() + scale_x_date(date_labels = "%m.%d")
+
+
+ggplot(cars, aes(x = speed, y = dist)) + geom_point()
+
+
+ice_cream_flavor <- rep(NA, times = 100)
+for(i in 1:100) {
+        ice_cream_flavor[i] <- sample(c("vanilla", "chocolate", "matcha", "other"), size = 1)
+}
+ice_cream_df <- data.frame(ice_cream_flavor = ice_cream_flavor)
+ggplot(ice_cream_df, aes(x = ice_cream_flavor)) + geom_bar() # 如果資料未經彙整
+
+
+flavor <- names(table(ice_cream_flavor))
+votes <- as.vector(unname(table(ice_cream_flavor))) # unname()
+ice_cream_df <- data.frame(flavor = flavor, votes = votes)
+ice_cream_df
+ggplot(ice_cream_df, aes(x = flavor, y = votes)) + geom_bar(stat = "identity")
+# 因為ggplot2會協助計算類別個數，所以資料框本身已經算好，就要加stat = "identity"
+
+
+sin_df <- data.frame(x = c(-pi, pi))
+sin_df
+ggplot(sin_df, aes(x = x)) + stat_function(fun = sin, geom = "line")
+
+my_sqr <- function(x) {
+        return(x ^ 2)
+}
+my_sqr_df <- data.frame(x = c(-3, 3))
+ggplot(my_sqr_df, aes(x = x)) + stat_function(fun = my_sqr, geom = "line")
+
+
+ggplot(cars, aes(x = speed, y = dist)) + 
+        geom_point() + 
+        ggtitle("Car speed vs. braking distance") + 
+        xlab("Car speed(mph)") + 
+        ylab("Breaking distance(ft)")
+
+
+ggplot(cars, aes(x = speed, y = dist)) + 
+        geom_point() + 
+        theme(panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank())
+
+
+ice_cream_flavor <- rep(NA, times = 100)
+for(i in 1:100) {
+        ice_cream_flavor[i] <- sample(c("vanilla", "chocolate", "matcha", "other"), size = 1)
+}
+ice_cream_df <- data.frame(ice_cream_flavor = ice_cream_flavor)
+ggplot(ice_cream_df, aes(x = ice_cream_flavor)) + 
+        geom_bar() + 
+        coord_flip()
+
+
+set.seed(123)
+norm_nums <- rnorm(100)
+hist_df <- data.frame(norm_nums = norm_nums)
+ggplot(hist_df, aes(x = norm_nums)) + 
+        geom_histogram(binwidth = 0.5, aes(y = ..density..), alpha = 0.5) + 
+        geom_density()
+
+ggplot(hist_df, aes(x = norm_nums, y = ..density..)) + 
+        geom_histogram(binwidth = 0.5, alpha = 0.5) + 
+        geom_density()
+
+
+ggplot(cars, aes(x = speed, y = dist)) + 
+        geom_point(shape = 2, colour = "red")
+
+
+ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) + 
+        geom_point(aes(shape = Species, colour = Species))
+
+
+library(ggplot2)
+library(gridExtra)
+g1 <- ggplot(iris, aes(x = Species, y = Sepal.Length)) + 
+        geom_boxplot()
+g2 <- ggplot(iris, aes(x = Species, y = Sepal.Width)) + 
+        geom_boxplot()
+g3 <- ggplot(iris, aes(x = Species, y = Petal.Length)) + 
+        geom_boxplot()
+g4 <- ggplot(iris, aes(x = Species, y = Petal.Width)) + 
+        geom_boxplot()
+grid.arrange(g1, g2, g3, g4, nrow = 2, ncol = 2)
+
+
+
+
+
+### R軟體資料分析基礎與應用 =====
+
+# 07 統計繪圖 =====
+
+require(ggplot2)
+data(diamonds)
+head(diamonds)
+hist(diamonds$carat, main = "Carat Histogram", xlab = "Carat")
+plot(price ~ carat, data = diamonds)
+plot(diamonds$carat, diamonds$price)
+identical(plot(price ~ carat, data = diamonds), plot(diamonds$carat, diamonds$price))
+boxplot(diamonds$carat)
+
+ggplot(data = diamonds) + geom_histogram(aes(x = carat))
+ggplot(data = diamonds) + geom_point(aes(x = carat, y = price))
+ggplot(data = diamonds, aes(x = carat, y = price)) + geom_point()
+g <- ggplot(diamonds, aes(x = carat, y = price))
+g + geom_point(aes(color = color))
+g + geom_point(aes(color = color)) + facet_wrap(~color)
+g + geom_point(aes(color = color)) + facet_grid(cut ~ clarity)
+ggplot(diamonds, aes(x = carat)) + geom_histogram() + facet_wrap(~color)
+ggplot(diamonds, aes(y = carat, x = 1)) + geom_boxplot()
+ggplot(diamonds) + geom_boxplot(aes(y = carat, x = clarity))
+ggplot(diamonds, aes(x = cut, y = carat)) + geom_boxplot()
+ggplot(diamonds, aes(x = cut, y = carat)) + geom_violin()
+ggplot(diamonds, aes(x = cut, y = carat)) + geom_violin() + geom_point()
+
+ggplot(economics, aes(x = date, y = pop)) + geom_line()
+head(economics)
+
+require(lubridate)
+economics$year <- year(economics$date)
+economics$month <- month(economics$date)
+head(economics)
+
+econ2000 <- economics[which(economics$year >= 2000), ]
+
+require(scales)
+g <- ggplot(econ2000, aes(x = month, y = pop))
+g <- g + geom_line(aes(color = factor(year), group = year))
+g <- g + scale_color_discrete(name = "Year")
+g <- g + scale_y_continuous(labels = comma)
+g <- g + labs(title = "Population Growth", x = "Month", y = "Population")
+g
+
+g2 <- ggplot(diamonds, aes(x = carat, y = price)) + geom_point(aes(color = color))
+g2
+require(ggthemes)
+g2 + theme_economist()
+g2 + theme_economist() + scale_colour_economist()
+g2 + theme_excel()
+g2 + theme_excel() + scale_colour_excel()
+g2 + theme_tufte()
+g2 + theme_wsj()
