@@ -1,6 +1,6 @@
-#資料挖礦與大數據分析==================================================
+#資料挖礦與大數據分析 ==================================================
 
-#關聯規則==================================================
+#關聯規則 ==================================================
 
 ## support（支持度）：前提項目X與結果項目Y一起出現的機率
 ## confidence（信賴度）：前提項目X發生的情況下，結果項目Y發生的條件機率
@@ -16,6 +16,7 @@
 
 library(arules)
 library(arulesViz)
+library(magrittr)
 
 data("IncomeESL")
 class(IncomeESL)
@@ -23,6 +24,7 @@ IncomeESL %>% head
 class(IncomeESL[, 4])
 IncomeESL <- IncomeESL[complete.cases(IncomeESL), ] # 刪除遺漏值
 dim(IncomeESL)
+str(IncomeESL)
 Income <- as(IncomeESL, "transactions") # 換成可以進行關聯分析的transactions物件，每個屬性值轉化為單一item
 inspect(Income[1:10])
 sort(itemFrequency(Income), decreasing = TRUE)
@@ -64,9 +66,9 @@ inspect(sort(rulesIncome, by = "confidence"))
 # 避免關聯規則太冗長，可以僅選取變數組合長度較短的
 
 
-# 利用R語言打通大數據的經脈==================================================
+# 利用R語言打通大數據的經脈 ==================================================
 
-# 06連結分析==================================================
+# 06連結分析 ==================================================
 
 # install.packages("arules")
 library(arules)

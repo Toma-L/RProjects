@@ -144,6 +144,7 @@ ggplot(ce, aes(x = Date, y = Weight, fill = Cultivar)) +
 
 ggplot(diamonds, aes(x = cut)) + geom_bar() # 離散型會得到bar chart
 ggplot(diamonds, aes(x = carat)) + geom_bar() # 連續型會得到histogram
+str(diamonds)
 
 
 
@@ -2401,6 +2402,17 @@ mosaic(~ Dept + Gender + Admit, data = UCBAdmissions,
        highlighting = "Admit", highlighting_fill = c("lightblue", "pink"), 
        direction = c("v", "v", "h")) # 使用不同分割方向
 
+
+ucba <- data.frame(UCBAdmissions)
+str(ucba)
+ucba$Gender <- plyr::revalue(ucba$Gender, c(Male = "M", Female = "F"))
+ucba$Admit <- factor(ucba$Admit, levels = c("Rejected", "Admitted"))
+mosaic(~ Dept + Gender + Admit, data = ucba, 
+       highlighting = "Admit", highlighting_fill = c("grey90", "#FFDDCC"), direction = c("v", "v", "h")) # 使用不同分割方向
+
+mosaic(~ Dept + Gender + Admit, data = UCBAdmissions, 
+       highlighting = "Admit", direction = c("v", "v", "h")) # 使用不同分割方向
+
 mosaic(~ Dept + Gender + Admit, data = UCBAdmissions, 
        highlighting = "Admit", highlighting_fill = c("lightblue", "pink"), 
        direction = c("v", "h", "h"))
@@ -2418,7 +2430,7 @@ pie(c(99, 18, 120), labels = c("L on R", "Neither", "R on L"))
 
 # 圓餅圖非常容易被批判，不如考慮使用長條圖，但圓餅圖的優勢是人人都能判讀
 
-
+ㄉ
 
 ## 13.17 創建地圖 =====
 
